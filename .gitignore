@@ -1,0 +1,7 @@
+# Eclipse project metadata
+.settings/
+.classpath
+.project
+
+# Build output
+target/
