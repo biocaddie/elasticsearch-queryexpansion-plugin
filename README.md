@@ -8,7 +8,7 @@ Work in Progress - A simple ElasticSearch plugin for exploration, which hopefull
 ## Docker
 To easily start up an ElasticSearch container in Docker:
 ```bash
-docker run --name=elastic-qe -d -p 8000:9200 -v $(pwd)/target:/plugins  -e "http.host=0.0.0.0" -e "transport.host=127.0.0.1" docker.elastic.co/elasticsearch/elasticsearch:5.3.2
+docker run --name=elastic-qe -d -p 9200:9200 -v $(pwd)/target:/plugins  -e "http.host=0.0.0.0" -e "transport.host=127.0.0.1" docker.elastic.co/elasticsearch/elasticsearch:5.3.2
 docker exec -it elastic-qe bash
 ```
 
