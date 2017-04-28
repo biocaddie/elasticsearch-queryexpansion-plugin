@@ -12,12 +12,12 @@ docker run --name=elastic-qe -d -p 8000:9200 -v $(pwd)/target:/plugins  -e "http
 docker exec -it elastic-qe bash
 ```
 
-# Clone this repo
+# Usage
 ```bash
 git clone bodom0015/elasticsearch-queryexpansion-plugin
 ```
 
-# Build
+## Build
 To build the source using Maven:
 ```bash
 mvn package
@@ -28,7 +28,7 @@ To build the source using Docker:
 docker run -it -v $(pwd):/workspace maven:3-jdk-8
 ```
 
-# Load
+## Load
 Start up an ElasticSearch instance (or use an existing one).
 
 Then load the `file:///full/path/to/queryexpansion-5.3.2-SNAPSHOT.zip` into ElasticSearch
@@ -39,9 +39,13 @@ bash-4.3$ bin/elasticsearch-plugin install file:///plugins/queryexpansion-5.3.2-
 -> Installed queryexpansion
 ```
 
-# Test
+## Test
 Currently broken, but still making progress:
 ```bash
 bash-4.3$ curl -u elastic:changeme localhost:9200/_hello
 {"error":{"root_cause":[{"type":"illegal_argument_exception","reason":"No endpoint or operation is available at [_hello]"}],"type":"illegal_argument_exception","reason":"No endpoint or operation is available at [_hello]"},"status":400}
 ```
+# TODO
+* Get the REST endpoint working
+* Write some unit / integration tests
+* Publish Maven artifacts
