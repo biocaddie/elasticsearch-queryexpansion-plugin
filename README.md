@@ -13,6 +13,7 @@ docker exec -it elastic-qe bash
 ```
 
 # Usage
+For now, cloning the source is required to run the plugin (see TODOs):
 ```bash
 git clone bodom0015/elasticsearch-queryexpansion-plugin
 ```
@@ -48,4 +49,4 @@ bash-4.3$ curl -u elastic:changeme localhost:9200/_hello
 # TODO
 * Get the REST endpoint working
 * Write some unit / integration tests
-* Publish Maven artifacts
+* Publish release artifacts so users don't need to build the source by hand
