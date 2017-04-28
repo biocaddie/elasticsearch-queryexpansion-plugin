@@ -8,6 +8,7 @@
 	<packaging>jar</packaging>
 
 	<name>queryexpansion</name>
+	<description>A custom plugin for ElasticSearch to enable Query Expansion</description>
 	<url>http://maven.apache.org</url>
 
 	<properties>
@@ -63,6 +64,9 @@
 					<descriptors>
 						<descriptor>${basedir}/src/main/assemblies/plugin.xml</descriptor>
 					</descriptors>
+		            <descriptorRefs>
+		              <descriptorRef>jar-with-dependencies</descriptorRef>
+		            </descriptorRefs>
 				</configuration>
 				<executions>
 					<execution>
