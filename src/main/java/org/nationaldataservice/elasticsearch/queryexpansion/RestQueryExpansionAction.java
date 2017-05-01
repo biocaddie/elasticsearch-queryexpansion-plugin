@@ -18,7 +18,8 @@ public class RestQueryExpansionAction extends BaseRestHandler {
     @Inject   
 	public RestQueryExpansionAction (Settings settings, RestController controller) {
 		super(settings);    
-		controller.registerHandler(GET, "/_ hello", this);
+		controller.registerHandler(GET, "/_hello", this);
+		controller.registerHandler(GET, "/_hello/{name}", this);
 	}
     @Override
 	protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) throws IOException {
