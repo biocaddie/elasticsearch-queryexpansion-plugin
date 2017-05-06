@@ -11,6 +11,11 @@ For now, cloning the source is required to run the plugin (see TODOs):
 git clone bodom0015/elasticsearch-queryexpansion-plugin
 ```
 
+To use:
+1. [Build](README.md#build)
+2. [Load](README.md#load)
+3. [Test](README.md#test)
+
 ## Build
 To build the source using Maven:
 ```bash
