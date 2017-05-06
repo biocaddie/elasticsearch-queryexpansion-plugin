@@ -2,9 +2,8 @@
 Work in Progress - A simple ElasticSearch plugin for exploration, which hopefully evolves into an implementation of QE in ElasticSearch
 
 # Prerequisites
-* Docker (recommended) or Maven
+* Docker (recommended) or Maven 
 
-## Docker
 # Usage
 For now, cloning the source is required to run the plugin (see TODOs):
 ```bash
@@ -27,12 +26,14 @@ To build the source using Docker:
 docker run -it -v $(pwd):/workspace maven:3-jdk-8 mvn clean package
 ```
 
-## Load
-Start up an ElasticSearch instance (or use an existing one).
+Either of the above should produce a `target` directory with the build artifacts.
 
-To easily start up an ElasticSearch container in Docker and load the plugin:
+The `.zip` that ElasticSearch needs should be found at `./target/releases/queryexpansion-5.3.2.zip`.
+
+## Load
+Start up an ElasticSearch Docker container (mounting in our `releases`) and load the plugin as fast as possible:
 ```bash
-ubuntu@ml $ docker rm -f elastic-qe; docker run --name=elastic-qe -it -d -p 9200:9200 -v /home/ubuntu/plugin.zip:/plugins/plugin.zip  -e "http.host=0.0.0.0" -e "transport.host=127.0.0.1" docker.elastic.co/elasticsearch/elasticsearch:5.3.2 && docker exec -it elastic-qe bin/elasticsearch-plugin install file:///plugins/plugin.zip
+ubuntu@ml $ docker rm -f elastic-qe; docker run --name=elastic-qe -it -d -p 9200:9200 -v $(pwd)/target/releases:/plugins/  -e "http.host=0.0.0.0" -e "transport.host=127.0.0.1" docker.elastic.co/elasticsearch/elasticsearch:5.3.2 && docker exec -it elastic-qe bin/elasticsearch-plugin install file:///plugins/queryexpansion-5.3.2.zip
 
 bab80bcb5086da014f8c88e424aad637436722435404112b663ac3fac5650b4d
 -> Downloading file:///plugins/plugin.zip
@@ -43,11 +44,10 @@ bab80bcb5086da014f8c88e424aad637436722435404112b663ac3fac5650b4d
 ### For now, we need to load the plugin during startup
 NOTE - while the above command works, the following does not:
 ```bash
-docker rm -f elastic-qe; docker run --name=elastic-qe -it -d -p 9200:9200 -v /home/ubuntu/plugin.zip:/plugins/plugin.zip  -e "http.host=0.0.0.0" -e "transport.host=127.0.0.1" docker.elastic.co/elasticsearch/elasticsearch:5.3.2 && sleep 15s && docker exec -it elastic-qe bin/elasticsearch-plugin install file:///plugins/plugin.zip
+ubuntu@ml $ docker rm -f elastic-qe; docker run --name=elastic-qe -it -d -p 9200:9200 -v $(pwd)/target/releases/:/plugins/  -e "http.host=0.0.0.0" -e "transport.host=127.0.0.1" docker.elastic.co/elasticsearch/elasticsearch:5.3.2 && sleep 15s && docker exec -it elastic-qe bin/elasticsearch-plugin install file:///plugins/queryexpansion-5.3.2.zip
 ```
 
-It seems the plugin needs to be installed during the initialization phase, as adding a slight delay causes it to fail.
-
+It seems the plugin needs to be installed during the initialization phase, as adding a `sleep 15s` will cause it to fail.
 
 ## Test
 You should now be able to test the new endpoint via curl:
@@ -94,10 +94,13 @@ ubuntu@ml $ docker logs -f elastic-qe
 [2017-05-06T04:53:36,194][INFO ][o.n.e.q.RestQueryExpansionAction] Plugin loaded!                       <-----
 [2017-05-06T04:53:36,216][INFO ][o.e.n.Node               ] initialized
 [2017-05-06T04:53:36,216][INFO ][o.e.n.Node               ] [p00ea4y] starting ...
+
 ...
+
 [2017-05-06T04:53:44,940][INFO ][o.n.e.q.RestQueryExpansionAction] Preparing request!                   <-----
 [2017-05-06T04:53:44,945][INFO ][o.n.e.q.QueryExpansionTransportAction] Executing transport action!     <-----
 [2017-05-06T04:53:44,949][INFO ][o.n.e.q.QueryExpansionResponse    ] Sending response: Hello Mike!      <-----
+
 ...
 ```
 
