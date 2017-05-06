@@ -8,15 +8,15 @@ import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
-public class HelloResponse extends ActionResponse implements ToXContent {
+public class QueryExpansionResponse extends ActionResponse implements ToXContent {
 
     private String message;
 
-    public HelloResponse() {
+    public QueryExpansionResponse() {
     	this("");
     }
     
-    public HelloResponse(String name) {
+    public QueryExpansionResponse(String name) {
     	this.message = name;
     }
 

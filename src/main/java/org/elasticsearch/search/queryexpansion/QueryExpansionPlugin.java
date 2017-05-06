@@ -16,8 +16,8 @@ import org.elasticsearch.plugins.ActionPlugin;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestHandler;
-import org.nationaldataservice.elasticsearch.queryexpansion.HelloAction;
-import org.nationaldataservice.elasticsearch.queryexpansion.HelloTransportAction;
+import org.nationaldataservice.elasticsearch.queryexpansion.QueryExpansionAction;
+import org.nationaldataservice.elasticsearch.queryexpansion.QueryExpansionTransportAction;
 import org.nationaldataservice.elasticsearch.queryexpansion.RestQueryExpansionAction;
 
 public class QueryExpansionPlugin extends Plugin implements ActionPlugin {
@@ -30,6 +30,6 @@ public class QueryExpansionPlugin extends Plugin implements ActionPlugin {
 	
 	@Override
 	public List<ActionHandler<? extends ActionRequest, ? extends ActionResponse>> getActions() {
-	    return Collections.singletonList(new ActionHandler<>(HelloAction.INSTANCE, HelloTransportAction.class));
+	    return Collections.singletonList(new ActionHandler<>(QueryExpansionAction.INSTANCE, QueryExpansionTransportAction.class));
 	}
 }

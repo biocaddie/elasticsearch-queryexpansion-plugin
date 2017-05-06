@@ -11,17 +11,17 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
-public class HelloTransportAction extends HandledTransportAction<HelloRequest, HelloResponse> {
-	private final Logger logger = ESLoggerFactory.getLogger(HelloTransportAction.class);
+public class QueryExpansionTransportAction extends HandledTransportAction<QueryExpansionRequest, QueryExpansionResponse> {
+	private final Logger logger = ESLoggerFactory.getLogger(QueryExpansionTransportAction.class);
 
     @Inject
-    public HelloTransportAction(Settings settings, ThreadPool threadPool, ActionFilters actionFilters,
+    public QueryExpansionTransportAction(Settings settings, ThreadPool threadPool, ActionFilters actionFilters,
                                 IndexNameExpressionResolver resolver, TransportService transportService) {
-        super(settings, HelloAction.NAME, threadPool, transportService, actionFilters, resolver, HelloRequest::new);
+        super(settings, QueryExpansionAction.NAME, threadPool, transportService, actionFilters, resolver, QueryExpansionRequest::new);
     }
     
     @Override
-    protected void doExecute(HelloRequest request, ActionListener<HelloResponse> listener) {
+    protected void doExecute(QueryExpansionRequest request, ActionListener<QueryExpansionResponse> listener) {
     	this.logger.info("Executing transport action!");
     	
         try {
@@ -29,7 +29,7 @@ public class HelloTransportAction extends HandledTransportAction<HelloRequest, H
             if (name == null) {
                 name = "World";
             }
-            HelloResponse response = new HelloResponse();
+            QueryExpansionResponse response = new QueryExpansionResponse();
             response.setMessage("Hello " + name + "!");
             listener.onResponse(response);
         } catch (Exception e) {

@@ -26,14 +26,14 @@ public class RestQueryExpansionAction extends BaseRestHandler {
     @Inject   
 	public RestQueryExpansionAction (Settings settings, RestController controller) {
 		super(settings);
-		this.logger.fatal("Plugin loaded!");
+		this.logger.info("Plugin loaded!");
 		controller.registerHandler(GET, "/_hello", this);
 		controller.registerHandler(GET, "/_hello/{name}", this);
 	}
     
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient client) throws IOException {
-        HelloRequest request = new HelloRequest();
+        QueryExpansionRequest request = new QueryExpansionRequest();
 		this.logger.info("Preparing request!");
 		
 		String name = restRequest.param("name");
@@ -44,11 +44,11 @@ public class RestQueryExpansionAction extends BaseRestHandler {
             request.setRestContent(restRequest.content());
         }
         
-        return channel -> client.execute(HelloAction.INSTANCE, request, new ActionListener<HelloResponse>() {
-        	private final Logger logger = ESLoggerFactory.getLogger(HelloResponse.class);
+        return channel -> client.execute(QueryExpansionAction.INSTANCE, request, new ActionListener<QueryExpansionResponse>() {
+        	private final Logger logger = ESLoggerFactory.getLogger(QueryExpansionResponse.class);
         	
 			@Override
-			public void onResponse(HelloResponse response) {
+			public void onResponse(QueryExpansionResponse response) {
 				this.logger.info("Sending response: " + response.getMessage());
 		        XContentBuilder builder;
 				try {
@@ -58,7 +58,7 @@ public class RestQueryExpansionAction extends BaseRestHandler {
 			        builder.endObject();
 			        channel.sendResponse(new BytesRestResponse(RestStatus.OK, builder));
 				} catch (IOException innerException) {
-					this.logger.error("Sending error:", innerException);
+					this.logger.error("I/O error:", innerException);
 				}
 			}
 
@@ -68,7 +68,7 @@ public class RestQueryExpansionAction extends BaseRestHandler {
 		        try {
 					channel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, channel.newBuilder()));
 				} catch (IOException innerException) {
-					this.logger.error("Sending error:", innerException);
+					this.logger.error("I/O error:", innerException);
 				}
 			}
         });

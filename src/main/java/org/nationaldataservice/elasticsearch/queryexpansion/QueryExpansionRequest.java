@@ -10,7 +10,7 @@ import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.xcontent.XContentHelper;
 
-public class HelloRequest extends ActionRequest {
+public class QueryExpansionRequest extends ActionRequest {
     private String name;
 
     public void setName(String name) {
