@@ -2,6 +2,7 @@
 Work in Progress - A simple ElasticSearch plugin for exploration, which hopefully evolves into an implementation of QE in ElasticSearch
 
 # Prerequisites
+* Git
 * Docker (recommended) or Maven 
 
 # Usage
