@@ -35,10 +35,13 @@ bab80bcb5086da014f8c88e424aad637436722435404112b663ac3fac5650b4d
 -> Installed queryexpansion
 ```
 
-NOTE: while the above command works, the following does not:
+### For now, we need to load the plugin during startup
+NOTE - while the above command works, the following does not:
 ```bash
 docker rm -f elastic-qe; docker run --name=elastic-qe -it -d -p 9200:9200 -v /home/ubuntu/plugin.zip:/plugins/plugin.zip  -e "http.host=0.0.0.0" -e "transport.host=127.0.0.1" docker.elastic.co/elasticsearch/elasticsearch:5.3.2 && sleep 15s && docker exec -it elastic-qe bin/elasticsearch-plugin install file:///plugins/plugin.zip
 ```
+
+It seems the plugin needs to be installed during the initialization phase, as adding a slight delay causes it to fail.
 
 
 ## Test
@@ -88,8 +91,8 @@ ubuntu@ml $ docker logs -f elastic-qe
 [2017-05-06T04:53:36,216][INFO ][o.e.n.Node               ] [p00ea4y] starting ...
 ...
 [2017-05-06T04:53:44,940][INFO ][o.n.e.q.RestQueryExpansionAction] Preparing request!                   <-----
-[2017-05-06T04:53:44,945][INFO ][o.n.e.q.QueryExpansionTransportAction] Executing transport action!              <-----
-[2017-05-06T04:53:44,949][INFO ][o.n.e.q.QueryExpansionResponse    ] Sending response: Hello Mike!               <-----
+[2017-05-06T04:53:44,945][INFO ][o.n.e.q.QueryExpansionTransportAction] Executing transport action!     <-----
+[2017-05-06T04:53:44,949][INFO ][o.n.e.q.QueryExpansionResponse    ] Sending response: Hello Mike!      <-----
 ...
 ```
 
