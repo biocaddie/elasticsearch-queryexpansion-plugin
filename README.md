@@ -47,7 +47,7 @@ It seems the plugin needs to be installed during the initialization phase, as ad
 ## Test
 You should now be able to test the new endpoint via curl:
 ```bash
-bash-4.3$ curl -u elastic:changeme localhost:9200/_hello/Mike --header "Content-Type: application/json" -vvv
+bash-4.3$ curl -u elastic:changeme localhost:9200/_hello/Mike -vvv
 *   Trying 127.0.0.1...
 * Connected to localhost (127.0.0.1) port 9200 (#0)
 * Server auth using Basic with user 'elastic'
