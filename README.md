@@ -43,10 +43,25 @@ bash-4.3$ bin/elasticsearch-plugin install file:///plugins/queryexpansion-5.3.2-
 ## Test
 Currently broken, but still making progress:
 ```bash
-bash-4.3$ curl -u elastic:changeme localhost:9200/_hello
-{"error":{"root_cause":[{"type":"illegal_argument_exception","reason":"No endpoint or operation is available at [_hello]"}],"type":"illegal_argument_exception","reason":"No endpoint or operation is available at [_hello]"},"status":400}
+bash-4.3$ curl -u elastic:changeme localhost:9200/_hello/Mike --header "Content-Type: application/json" -vvv
+*   Trying 127.0.0.1...
+* Connected to localhost (127.0.0.1) port 9200 (#0)
+* Server auth using Basic with user 'elastic'
+> GET /_hello/Mike HTTP/1.1
+> Host: localhost:9200
+> Authorization: Basic ZWxhc3RpYzpjaGFuZ2VtZQ==
+> User-Agent: curl/7.47.0
+> Accept: */*
+> Content-Type: application/json
+> 
+< HTTP/1.1 200 OK
+< content-type: application/json; charset=UTF-8
+< content-length: 25
+< 
+* Connection #0 to host localhost left intact
+{"message":"Hello Mike!"}
 ```
+
 # TODO
-* Get the REST endpoint working
 * Write some unit / integration tests
 * Publish release artifacts so users don't need to build the source by hand
