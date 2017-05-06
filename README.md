@@ -3,7 +3,8 @@ Work in Progress - A simple ElasticSearch plugin for exploration, which hopefull
 
 # Prerequisites
 * Git
-* Docker (recommended) or Maven 
+* Docker (arguably optional, but highly recommended)
+* Maven (you can use the official maven Docker image or a local install)
 
 # Usage
 For now, cloning the source is required to run the plugin (see TODOs):
