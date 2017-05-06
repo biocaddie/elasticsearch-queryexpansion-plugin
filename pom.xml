@@ -15,9 +15,18 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<elasticsearch.version>5.3.2</elasticsearch.version>
 		<junit.version>3.8.1</junit.version>
+		<log4j.version>2.8.2</log4j.version>
 	</properties>
 
 	<dependencies>
+		<dependency>
+		    <groupId>org.apache.logging.log4j</groupId>
+		    <artifactId>log4j-core</artifactId>
+		    <version>2.8.2</version>
+		    <scope>provided</scope>
+		</dependency>
+
+		
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -29,6 +38,7 @@
 			<groupId>org.elasticsearch</groupId>
 			<artifactId>elasticsearch</artifactId>
 			<version>${elasticsearch.version}</version>
+			<scope>provided</scope>
 		</dependency>
 	</dependencies>
 
@@ -64,9 +74,6 @@
 					<descriptors>
 						<descriptor>${basedir}/src/main/assemblies/plugin.xml</descriptor>
 					</descriptors>
-		            <descriptorRefs>
-		              <descriptorRef>jar-with-dependencies</descriptorRef>
-		            </descriptorRefs>
 				</configuration>
 				<executions>
 					<execution>
