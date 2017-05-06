@@ -13,6 +13,11 @@ public class HelloResponse extends ActionResponse implements ToXContent {
     private String message;
 
     public HelloResponse() {
+    	this("");
+    }
+    
+    public HelloResponse(String name) {
+    	this.message = name;
     }
 
     public void setMessage(String message) {
