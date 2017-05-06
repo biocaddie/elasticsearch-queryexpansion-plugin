@@ -13,18 +13,25 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+		<elasticsearch.groupid>org.elasticsearch</elasticsearch.groupid>
 		<elasticsearch.version>5.3.2</elasticsearch.version>
-		<junit.version>3.8.1</junit.version>
-		<log4j.version>2.8.2</log4j.version>
+		<elasticsearch.client.version>5.3.2</elasticsearch.client.version>
+		<junit.version>4.12</junit.version>
+		<log4j.version>2.6.2</log4j.version>
+		
+		<skipTests>false</skipTests>
+		<skipIntegTests>false</skipIntegTests>
+		<skipUnitTests>false</skipUnitTests>
 	</properties>
 
 	<dependencies>
-		<dependency>
-		    <groupId>org.apache.logging.log4j</groupId>
-		    <artifactId>log4j-core</artifactId>
-		    <version>2.8.2</version>
-		    <scope>provided</scope>
-		</dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j.version}</version>
+            <scope>provided</scope>
+        </dependency>
 
 		
 		<dependency>
@@ -40,6 +47,20 @@
 			<version>${elasticsearch.version}</version>
 			<scope>provided</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>org.elasticsearch.test</groupId>
+			<artifactId>framework</artifactId>
+			<version>${elasticsearch.version}</version>
+			<scope>test</scope>
+		</dependency>
+		
+		<dependency>
+		    <groupId>org.elasticsearch.client</groupId>
+		    <artifactId>rest</artifactId>
+		    <version>${elasticsearch.client.version}</version>
+		    <scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -54,6 +75,7 @@
 		</resources>
 
 		<plugins>
+			<!--  Maven Compiler Plugin -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -64,6 +86,7 @@
 				</configuration>
 			</plugin>
 
+			<!--  Maven Assembly Plugin -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-assembly-plugin</artifactId>
@@ -84,7 +107,86 @@
 					</execution>
 				</executions>
 			</plugin>
+			
+			<!--  Maven Dependency Plugin -->
+			<plugin>
+			    <groupId>org.apache.maven.plugins</groupId>
+			    <artifactId>maven-dependency-plugin</artifactId>
+			    <version>2.10</version>
+			    <executions>
+			        <execution>
+			            <id>integ-setup-dependencies</id>
+			            <phase>pre-integration-test</phase>
+			            <goals>
+			                <goal>copy</goal>
+			            </goals>
+			            <configuration>
+			                <skip>${skipIntegTests}</skip>
+			                <artifactItems>
+			                    <artifactItem>
+			                        <groupId>${elasticsearch.groupid}</groupId>
+			                        <artifactId>elasticsearch</artifactId>
+			                        <version>${elasticsearch.version}</version>
+			                        <type>zip</type>
+			                    </artifactItem>
+			                </artifactItems>
+			                <useBaseVersion>true</useBaseVersion>
+			                <outputDirectory>${project.build.directory}/integration-tests/binaries</outputDirectory>
+			            </configuration>
+			        </execution>
+			    </executions>
+			</plugin>
+			
+			<!-- Maven ANT Run Plugin -->
+			<plugin>
+			    <groupId>org.apache.maven.plugins</groupId>
+			    <artifactId>maven-antrun-plugin</artifactId>
+			    <version>1.8</version>
+			    <executions>
+			        <!-- start up external cluster -->
+			        <execution>
+			            <id>integ-setup</id>
+			            <phase>pre-integration-test</phase>
+			            <goals>
+			                <goal>run</goal>
+			            </goals>
+			            <configuration>
+			                <skip>${skipIntegTests}</skip>
+			                <target>
+			                    <ant antfile="src/test/ant/integration-tests.xml" target="start-external-cluster-with-plugin"/>
+			                </target>
+			            </configuration>
+			        </execution>
+			        
+			        <!-- shut down external cluster -->
+			        <execution>
+			            <id>integ-teardown</id>
+			            <phase>post-integration-test</phase>
+			            <goals>
+			                <goal>run</goal>
+			            </goals>
+			            <configuration>
+			                <skip>${skipIntegTests}</skip>
+			                <target>
+			                    <ant antfile="src/test/ant/integration-tests.xml" target="stop-external-cluster"/>
+			                </target>
+			            </configuration>
+			        </execution>
+			    </executions>
+			</plugin>
+			
+			<!-- Disable Maven Surefire Plugin (separate unit and integration tests) -->
+			<plugin>
+			    <groupId>org.apache.maven.plugins</groupId>
+			    <artifactId>maven-surefire-plugin</artifactId>
+			    <version>2.19</version>
+			    <executions>
+			        <execution>
+			            <id>default-test</id>
+			            <phase>none</phase>
+			        </execution>
+			    </executions>
+			</plugin>
 		</plugins>
-
 	</build>
 </project>
