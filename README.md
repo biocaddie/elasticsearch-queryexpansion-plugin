@@ -19,12 +19,12 @@ To use:
 ## Build
 To build the source using Maven:
 ```bash
-mvn package
+mvn clean package
 ```
 
 To build the source using Docker:
 ```bash
-docker run -it -v $(pwd):/workspace maven:3-jdk-8
+docker run -it -v $(pwd):/workspace maven:3-jdk-8 mvn clean package
 ```
 
 ## Load
