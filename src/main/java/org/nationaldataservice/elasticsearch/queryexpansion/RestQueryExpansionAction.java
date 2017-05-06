@@ -28,7 +28,7 @@ public class RestQueryExpansionAction extends BaseRestHandler {
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient client) throws IOException {
         HelloRequest request = new HelloRequest();
-		this.logger.fatal("Preparing request!");
+		this.logger.info("Preparing request!");
 
         String name = restRequest.param("name");
         if (name != null) {
@@ -42,14 +42,12 @@ public class RestQueryExpansionAction extends BaseRestHandler {
         	
 			@Override
 			public void onResponse(HelloResponse response) {
-				System.out.println(response.toString());
-				this.logger.fatal("Preparing request!");
+				this.logger.info("Sending response: " + response.getMessage());
 			}
 
 			@Override
 			public void onFailure(Exception e) {
-				System.err.println(e);
-				this.logger.fatal("Response: error!");
+				this.logger.error("Sending error:", e);
 			}
         });
     }
