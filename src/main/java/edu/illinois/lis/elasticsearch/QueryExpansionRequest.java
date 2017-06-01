@@ -1,4 +1,4 @@
-package org.nationaldataservice.elasticsearch.queryexpansion;
+package edu.illinois.lis.elasticsearch;
 
 import java.io.IOException;
 import java.util.Map;
@@ -10,7 +10,7 @@ import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.xcontent.XContentHelper;
 
-public class QueryExpansionRequest extends ActionRequest {
+public class QueryExpansionRequest extends ActionRequest<QueryExpansionRequest> {
     private String name;
 
     public void setName(String name) {
@@ -19,8 +19,7 @@ public class QueryExpansionRequest extends ActionRequest {
 
     public void setRestContent(BytesReference restContent) {
         // Let's try to find the name from the body
-        @SuppressWarnings("deprecation")
-		Map<String, Object> map = XContentHelper.convertToMap(restContent, false).v2();
+        Map<String, Object> map = XContentHelper.convertToMap(restContent, false).v2();
         if (map.containsKey("name")) {
             name = (String) map.get("name");
         }

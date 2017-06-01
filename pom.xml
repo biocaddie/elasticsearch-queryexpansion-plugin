@@ -2,9 +2,9 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>org.nationaldataservice.elasticsearch</groupId>
+	<groupId>edu.illinois.lis.elasticsearch</groupId>
 	<artifactId>queryexpansion</artifactId>
-	<version>5.3.2-SNAPSHOT</version>
+	<version>1.7.5-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>queryexpansion</name>
@@ -15,7 +15,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
 		<elasticsearch.groupid>org.elasticsearch</elasticsearch.groupid>
-		<elasticsearch.version>5.3.2</elasticsearch.version>
+		<elasticsearch.version>1.7.5</elasticsearch.version>
 		<elasticsearch.client.version>5.3.2</elasticsearch.client.version>
 		<junit.version>4.12</junit.version>
 		<log4j.version>2.6.2</log4j.version>
@@ -46,13 +46,6 @@
 			<artifactId>elasticsearch</artifactId>
 			<version>${elasticsearch.version}</version>
 			<scope>provided</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.elasticsearch.test</groupId>
-			<artifactId>framework</artifactId>
-			<version>${elasticsearch.version}</version>
-			<scope>test</scope>
 		</dependency>
 		
 		<dependency>

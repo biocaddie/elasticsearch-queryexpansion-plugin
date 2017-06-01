@@ -1,38 +1,38 @@
-package org.nationaldataservice.elasticsearch.queryexpansion;
+package edu.illinois.lis.elasticsearch;
 
 import static org.elasticsearch.rest.RestRequest.Method.GET;
 
 import java.io.IOException;
 
-import org.apache.logging.log4j.Logger;
 import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.client.node.NodeClient;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.common.inject.Inject;
-import org.elasticsearch.common.io.Streams;
+import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.ToXContent;
-import org.elasticsearch.common.xcontent.ToXContent.Params;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.rest.BaseRestHandler;
 import org.elasticsearch.rest.BytesRestResponse;
+import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestStatus;
 
 public class RestQueryExpansionAction extends BaseRestHandler {
-	private final Logger logger = ESLoggerFactory.getLogger(RestQueryExpansionAction.class);
+	private final ESLogger logger = ESLoggerFactory.getLogger(RestQueryExpansionAction.class.toString());
 	
     @Inject   
-	public RestQueryExpansionAction (Settings settings, RestController controller) {
-		super(settings);
+	public RestQueryExpansionAction (Settings settings, Client client, RestController controller) {
+		super(settings, controller,client);
 		this.logger.info("Plugin loaded!");
+		
 		controller.registerHandler(GET, "/_hello", this);
 		controller.registerHandler(GET, "/_hello/{name}", this);
 	}
     
     @Override
-    protected RestChannelConsumer prepareRequest(RestRequest restRequest, NodeClient client) throws IOException {
+    protected void handleRequest(final RestRequest restRequest, final RestChannel channel, final Client client) throws IOException {
         QueryExpansionRequest request = new QueryExpansionRequest();
 		this.logger.info("Preparing request!");
 		
@@ -43,10 +43,22 @@ public class RestQueryExpansionAction extends BaseRestHandler {
         } else if (restRequest.hasContent()){
             request.setRestContent(restRequest.content());
         }
+
+        QueryExpansionRequest actionRequest = new QueryExpansionRequest();
         
-        return channel -> client.execute(QueryExpansionAction.INSTANCE, request, new ActionListener<QueryExpansionResponse>() {
-        	private final Logger logger = ESLoggerFactory.getLogger(QueryExpansionResponse.class);
+        client.execute(QueryExpansionAction.INSTANCE, actionRequest, new ActionListener<QueryExpansionResponse>() {
+        	private ESLogger logger = ESLoggerFactory.getLogger("QueryExpansionActionListener");
         	
+			@Override
+			public void onFailure(Throwable e) {
+				this.logger.error("Sending error:", e);
+		        try {
+					channel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, channel.newBuilder()));
+				} catch (IOException innerException) {
+					this.logger.error("I/O error:", innerException);
+				}
+			}
+
 			@Override
 			public void onResponse(QueryExpansionResponse response) {
 				this.logger.info("Sending response: " + response.getMessage());
@@ -57,20 +69,11 @@ public class RestQueryExpansionAction extends BaseRestHandler {
 			        response.toXContent(builder, restRequest);
 			        builder.endObject();
 			        channel.sendResponse(new BytesRestResponse(RestStatus.OK, builder));
-				} catch (IOException innerException) {
-					this.logger.error("I/O error:", innerException);
+				} catch (IOException e) {
+					onFailure(e);
 				}
 			}
-
-			@Override
-			public void onFailure(Exception e) {
-				this.logger.error("Sending error:", e);
-		        try {
-					channel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, channel.newBuilder()));
-				} catch (IOException innerException) {
-					this.logger.error("I/O error:", innerException);
-				}
-			}
+        	
         });
     }
 

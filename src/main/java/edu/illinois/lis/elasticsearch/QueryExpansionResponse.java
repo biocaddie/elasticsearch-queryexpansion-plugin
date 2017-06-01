@@ -1,4 +1,4 @@
-package org.nationaldataservice.elasticsearch.queryexpansion;
+package edu.illinois.lis.elasticsearch;
 
 import java.io.IOException;
 
