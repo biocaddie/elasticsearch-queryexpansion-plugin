@@ -32,12 +32,12 @@ public class QueryExpansionRequest extends ActionRequest {
     
     @Override
     public ActionRequestValidationException validate() {
-        ActionRequestValidationException validationException = null;
+    	/*ActionRequestValidationException validationException = null;
         if (name == null) {
             validationException = new ActionRequestValidationException();
             validationException.addValidationError("You must provide a name");
             return validationException;
-        }
+        }*/
         return null;
     }
     

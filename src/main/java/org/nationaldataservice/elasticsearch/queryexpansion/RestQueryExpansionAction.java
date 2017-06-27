@@ -8,11 +8,8 @@ import org.apache.logging.log4j.Logger;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.client.node.NodeClient;
 import org.elasticsearch.common.inject.Inject;
-import org.elasticsearch.common.io.Streams;
 import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.ToXContent;
-import org.elasticsearch.common.xcontent.ToXContent.Params;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.rest.BaseRestHandler;
 import org.elasticsearch.rest.BytesRestResponse;
@@ -73,22 +70,4 @@ public class RestQueryExpansionAction extends BaseRestHandler {
 			}
         });
     }
-
-	class Message implements ToXContent {
-	
-	    private final String name;
-	
-	    public Message(String name) {
-	        if (name == null) {
-	            this.name = "World";
-	        } else {
-	            this.name = name;
-	        }
-	    }
-	
-	    @Override
-	    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-	        return builder.field("message", "Hello " + name + "!");
-	    }
-	}
 }
