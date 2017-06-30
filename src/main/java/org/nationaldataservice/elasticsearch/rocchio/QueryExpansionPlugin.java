@@ -24,6 +24,6 @@ public class QueryExpansionPlugin extends Plugin implements ActionPlugin {
             SettingsFilter settingsFilter,
             IndexNameExpressionResolver indexNameExpressionResolver,
             Supplier<DiscoveryNodes> nodesInCluster) {
-        return Arrays.asList(new RocchioRestAction(settings, restController));
+        return Arrays.asList(new RocchioExpandRestAction(settings, restController));
     }
 }
