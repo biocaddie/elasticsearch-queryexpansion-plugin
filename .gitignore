@@ -5,3 +5,6 @@
 
 # Build output
 target/
+
+# ElasticSearch data
+es-data/

@@ -1,11 +1,11 @@
-package org.nationaldataservice.elasticsearch.queryexpansion.test.unit;
+package org.nationaldataservice.elasticsearch.rocchio.test.unit;
 
 import org.elasticsearch.test.ESTestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class HelloTest extends ESTestCase {
+public class RocchioTest extends ESTestCase {
 	@Before
 	public void setUp() {
 		System.out.println("Set up!");

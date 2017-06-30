@@ -1,21 +1,21 @@
-package org.nationaldataservice.elasticsearch.queryexpansion.test.integration;
+package org.nationaldataservice.elasticsearch.rocchio.test.integration;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import org.elasticsearch.test.ESIntegTestCase;
 import org.junit.BeforeClass;
+import org.nationaldataservice.elasticsearch.rocchio.QueryExpansionPlugin;
 import org.apache.http.HttpHost;
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.plugins.Plugin;
-import org.elasticsearch.search.queryexpansion.QueryExpansionPlugin;
 
 public abstract class AbstractIntegTestCase extends ESIntegTestCase {
     protected static final Logger staticLogger = ESLoggerFactory.getLogger("it");
-    protected final static int HTTP_TEST_PORT = 9400;
+    protected final static int HTTP_TEST_PORT = 9200;
     protected static RestClient client;
     
     @Override
