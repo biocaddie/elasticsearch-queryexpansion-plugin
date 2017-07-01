@@ -1,10 +1,18 @@
 package org.nationaldataservice.elasticsearch.rocchio;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.Terms;
@@ -17,11 +25,15 @@ import org.elasticsearch.action.termvectors.MultiTermVectorsResponse;
 import org.elasticsearch.action.termvectors.TermVectorsRequest;
 import org.elasticsearch.action.termvectors.TermVectorsResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.logging.ESLoggerFactory;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.index.query.QueryStringQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 //import org.elasticsearch.transport.client.PreBuiltTransportClient;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
 
 import edu.gslis.textrepresentation.FeatureVector;
 
@@ -35,6 +47,7 @@ import edu.gslis.textrepresentation.FeatureVector;
  * Todo: 
  * 		Specify stoplist
  */
+@SuppressWarnings("deprecation")
 public class Rocchio 
 {
 	private Logger logger = ESLoggerFactory.getLogger(Rocchio.class);
@@ -79,7 +92,7 @@ public class Rocchio
 	
 	private void fail(String errorMessage) {
 		this.logger.error(errorMessage);
-		throw new IllegalStateException();
+		throw new IllegalStateException(errorMessage);
 	}
 	
 	private void failIf(Supplier<Boolean> condition, String errorMessage) {
@@ -243,5 +256,90 @@ public class Rocchio
 			double weight = (idf * k1 * tf) / (tf + k1 * (1 - b + b * inputVector.getLength() / avgDocLen));
 			outputVector.addTerm(term, weight);
 		}
-	}	
+	}
+	
+	
+	/**
+	 * Command line options
+	 * @return
+	 */
+    public static Options createOptions()
+    {
+        Options options = new Options();
+        options.addOption("cluster", true, "ElasticSearch cluster name (default: biocaddie)");
+        options.addOption("host", true, "ElasticSearch host (default: localhost)");
+        options.addOption("port", true, "ElasticSearch transport port (default: 9300)");
+        options.addOption("index", true, "ElasticSearch index name (default: biocaddie)");
+        options.addOption("type", true, "ElasticSearch document type  (default: dataset)");
+        options.addOption("field", true, "ElasticSearch  field  (default: _all)");
+        options.addOption("alpha", true, "Rocchio alpha (default: 0.5)");
+        options.addOption("beta", true, "Rocchio beta (default: 0.5)");
+        options.addOption("k1", true, "BM25 k1 (default: 1.2)");
+        options.addOption("b", true, "BM25 b (default: 0.75)");
+        options.addOption("query", true, "Query string");
+        options.addOption("auth", true, "Basic authentication string (default: elastic:biocaddie)");
+        return options;
+    }
+	
+    /**
+     * Debug: this will run Rocchio as a standalone command-line application.
+     * 
+     * @param args the command-line arguments
+     * @throws IOException if expandQuery throws an IOException
+     * @throws UnknownHostException if the host lookup fails (localhost shouldn't)
+     * @throws ParseException if the command-line arguments cannot be parsed
+     */
+	public static void main(String[] args) throws IOException, ParseException
+	{
+	
+        Options options = createOptions();
+        CommandLineParser parser = new GnuParser();
+        CommandLine cl = parser.parse( options, args);
+        if (cl.hasOption("help")) {
+            HelpFormatter formatter = new HelpFormatter();
+            formatter.printHelp( Rocchio.class.getCanonicalName(), options );
+            return;
+        }
+        
+        // Get the many command line parameters
+        String cluster = cl.getOptionValue("cluster", "elasticsearch");
+        String host = cl.getOptionValue("host", "localhost");
+        int port = Integer.parseInt(cl.getOptionValue("port", "9300"));
+        double alpha = Double.parseDouble(cl.getOptionValue("alpha", "0.5"));
+        double beta = Double.parseDouble(cl.getOptionValue("beta", "0.5"));
+        double k1 = Double.parseDouble(cl.getOptionValue("k1", "1.2"));
+        double b = Double.parseDouble(cl.getOptionValue("b", "0.75"));
+        int fbTerms = Integer.parseInt(cl.getOptionValue("fbTerms", "10"));
+        int fbDocs = Integer.parseInt(cl.getOptionValue("fbDocs", "10"));
+        String index = cl.getOptionValue("index", "biocaddie");
+        String type = cl.getOptionValue("type", "dataset");
+        String field = cl.getOptionValue("field", "_all");
+
+        String auth = cl.getOptionValue("auth", "elastic:biocaddie");
+        String query = cl.getOptionValue("query", "multiple sclerosis");
+        
+        
+        // Connect to ElasticSearch
+		Settings settings = Settings.builder().put("cluster.name", cluster).build();
+		TransportClient transportClient = new PreBuiltTransportClient(settings);
+		transportClient.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(host), port));
+		Client client = transportClient.filterWithHeader(Collections.singletonMap("Authorization", auth));
+		
+		
+		// Construct Rocchio
+		Rocchio rocchio = new Rocchio(client, index, type, field, alpha, beta, k1, b);
+		
+		// Expand the query
+		FeatureVector feedbackQuery = rocchio.expandQuery(query, fbDocs, fbTerms);
+		
+		// Dump the expanded query
+		StringBuffer esQuery = new StringBuffer();
+		for (String term : feedbackQuery.getFeatures()) {
+			esQuery.append(term + "^" + feedbackQuery.getFeatureWeight(term) + " ");
+		}	    
+		System.out.println(esQuery);
+		
+		transportClient.close();
+
+	}
 }
