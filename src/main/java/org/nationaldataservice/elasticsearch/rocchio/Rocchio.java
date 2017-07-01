@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -25,7 +26,11 @@ import org.elasticsearch.action.termvectors.MultiTermVectorsResponse;
 import org.elasticsearch.action.termvectors.TermVectorsRequest;
 import org.elasticsearch.action.termvectors.TermVectorsResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.Requests;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.cluster.metadata.IndexMetaData;
+import org.elasticsearch.cluster.metadata.MappingMetaData;
+import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
@@ -36,6 +41,7 @@ import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 
 import edu.gslis.textrepresentation.FeatureVector;
+import joptsimple.internal.Strings;
 
 /**
  * Rocchio implementation for Lucene based on:
@@ -48,6 +54,14 @@ import edu.gslis.textrepresentation.FeatureVector;
 @SuppressWarnings("deprecation")
 public class Rocchio {
 	private Logger logger = ESLoggerFactory.getLogger(Rocchio.class);
+
+	// FIXME: These are just random guesses
+	private static int ALPHA_BETA_MIN = 0;
+	private static int ALPHA_BETA_MAX = 1;
+	private static int K1_MIN = 0;
+	private static int K1_MAX = 2;
+	private static int B_MIN = 0;
+	private static int B_MAX = 1;
 
 	private Client client; // ElasticSearch client
 	private String index; // ElasticSearch index name
@@ -102,6 +116,146 @@ public class Rocchio {
 			fail(errorMessage);
 		}
 	}
+	
+
+
+	/**
+	 * Verifies that String and numeric values are within their allowed ranges,
+	 * 
+	 * @param index
+	 *            the String index to expand against
+	 * @param query
+	 *            the String query to expand
+	 * @param type
+	 *            the String type within the index
+	 * @param field
+	 *            the String field on the type
+	 * @param fbDocs
+	 *            the int number of feedback documents
+	 * @param fbTerms
+	 *            the int number of feedback terms
+	 * @param alpha
+	 *            the double Rocchio alpha parameter
+	 * @param beta
+	 *            the double Rocchio beta parameter
+	 * @param k1
+	 *            the double Rocchio k1 parameter
+	 * @param b
+	 *            the double Rocchio b parameter
+	 * @return the String error message, or null if no errors are encountered
+	 * @throws IOException  if the indexMetaData fails to deserialize into a map
+	 */
+	protected String getErrors(String query, int fbDocs, int fbTerms) throws IOException {
+		if (Strings.isNullOrEmpty(index)) {
+			return "You must specify an index to expand against";
+		} else if (Strings.isNullOrEmpty(query)) {
+			return "You must specify a query to expand";
+		} else if (Strings.isNullOrEmpty(type)) {
+			return "You must specify a type";
+		} else if (Strings.isNullOrEmpty(field)) {
+			return "You must specify a field";
+		} else if (fbDocs < 1) {
+			return "Number of feedback documents (fbDocs) must be a positive integer";
+		} else if (fbTerms < 1) {
+			return "Number of feedback terms (fbTerms) must be a positive integer";
+		} else if (ALPHA_BETA_MIN > alpha || alpha > ALPHA_BETA_MAX) {
+			return "Alpha value must be a real number between " + ALPHA_BETA_MIN + " and " + ALPHA_BETA_MAX;
+		} else if (ALPHA_BETA_MIN > beta || beta > ALPHA_BETA_MAX) {
+			return "Beta value must be a real number between " + ALPHA_BETA_MIN + " and " + ALPHA_BETA_MAX;
+		} else if (K1_MIN > k1 || k1 > K1_MAX) {
+			return "K1 value must be a real number between " + K1_MIN + " and " + K1_MAX;
+		} else if (B_MIN > b || b > B_MAX) {
+			return "B value must be a real number between " + B_MIN + " and " + B_MAX;
+		}
+		return this.ensureTermVectors();
+	}
+
+	/**
+	 * Returns an error message if term vectors are misconfigured. Otherwise,
+	 * returns null.
+	 * 
+	 * TODO: Some of this can potentially be called at plugin startup, if we
+	 * know what index/type we plan to expand against ahead of time...
+	 * 
+	 * @param client
+	 *            the client to use for the connection
+	 * @param index
+	 *            the index to check for the desired type
+	 * @param type
+	 *            the type to check for the desired field
+	 * @param field
+	 *            the field for which to verify that term vectors are enabled
+	 * @return the String error message, or null if no errors are encountered
+	 * 
+	 * @throws IOException
+	 *             if the indexMetaData fails to deserialize into a map
+	 */
+	@SuppressWarnings("unchecked")
+	private String ensureTermVectors() throws IOException {
+		// Verify that the index exists
+		IndexMetaData indexMetaData = client.admin().cluster().state(Requests.clusterStateRequest()).actionGet()
+				.getState().getMetaData().index(index);
+
+		if (indexMetaData == null) {
+			return "Index does not exist";
+		}
+
+		// Verify that the index contains the desired type
+		ImmutableOpenMap<String, MappingMetaData> indexMap = indexMetaData.getMappings();
+		if (!indexMap.containsKey(type)) {
+			return "No mapping found on index " + index + " for: " + type;
+		}
+
+		// Grab the type and analyze it to locate the field
+		MappingMetaData typeMetadata = indexMetaData.getMappings().get(type);
+		Map<String, Object> typeMap = typeMetadata.getSourceAsMap();
+
+		LinkedHashMap<String, Object> fieldProperties,
+				allFieldProperties = (LinkedHashMap<String, Object>) typeMap.get("_all");
+		if (!"_all".equals(field)) {
+			// Otherwise, we need to drill down into "properties"
+			LinkedHashMap<String, Object> typePropertiesMap = (LinkedHashMap<String, Object>) typeMap.get("properties");
+			fieldProperties = (LinkedHashMap<String, Object>) typePropertiesMap.get(field);
+		} else {
+			// we can look for "store" on "_all" too
+			fieldProperties = allFieldProperties;
+		}
+
+		// Verify that "store" is present on either _all or our target field
+		if (allFieldProperties.containsKey("store")) {
+			// Verify that term vector storage is enabled for all fields
+			boolean storeEnabled = (boolean) allFieldProperties.get("store");
+			if (!storeEnabled) {
+				this.logger.error(
+						"Term vectors storage for on " + index + "." + type + "." + field + " has been disabled");
+				return "Term vectors storage for " + index + "." + type + "." + field + " has been disabled";
+			}
+
+			return null;
+		} else if (fieldProperties.containsKey("store")) {
+			// Verify that term vector storage is enabled at the field level
+			boolean storeEnabled = (boolean) fieldProperties.get("store");
+			if (!storeEnabled) {
+				this.logger.error(
+						"Term vectors storage for on index " + index + "." + type + "." + field + " has been disabled");
+				return "Term vectors storage for " + index + "." + type + "." + field + " has been disabled";
+			}
+
+			return null;
+		}
+		
+		// TODO: Check that type has documents added to it?
+		// TODO: Check that the documents in the type contain the desired field?
+
+		// TODO: Check that term vectors/fields stats are available for the
+		// desired index/type/field combination?
+
+		// If neither of the above triggered, then we didn't have the right term
+		// vectors initialized on our index
+		this.logger.error(
+				"Term vectors storage for on index " + index + "." + type + "." + field + " has not been configured");
+		return "Term vectors storage for " + index + "." + type + "." + field + " has not been configured";
+	}
 
 	/**
 	 * Run the query using the client (this assumes that the client has already
@@ -113,7 +267,7 @@ public class Rocchio {
 	 *            Number of results to return
 	 * @return SearchHits object
 	 */
-	private SearchHits runQuery(String query, int numDocs) {
+	public SearchHits runQuery(String query, int numDocs) {
 		SearchRequestBuilder searchRequestBuilder = client.prepareSearch(index);
 		QueryStringQueryBuilder queryStringQueryBuilder = new QueryStringQueryBuilder(query);
 		searchRequestBuilder.setQuery(queryStringQueryBuilder).setSize(numDocs);

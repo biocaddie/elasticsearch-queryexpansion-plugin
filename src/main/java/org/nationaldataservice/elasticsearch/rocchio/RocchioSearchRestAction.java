@@ -12,19 +12,21 @@ import org.elasticsearch.rest.BytesRestResponse;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 
 import edu.gslis.textrepresentation.FeatureVector;
 import joptsimple.internal.Strings;
 
-public class RocchioExpandRestAction extends BaseRestHandler {
-
+public class RocchioSearchRestAction extends BaseRestHandler {
+	
 	@Inject
-	public RocchioExpandRestAction(Settings settings, RestController controller) {
+	public RocchioSearchRestAction(Settings settings, RestController controller) {
 		super(settings);
-
+		
 		// Register your handlers here
-		controller.registerHandler(RestRequest.Method.GET, "/{index}/{type}/_expand", this);
-		controller.registerHandler(RestRequest.Method.GET, "/{index}/_expand", this);
+		controller.registerHandler(RestRequest.Method.GET, "/{index}/{type}/_esearch", this);
+		controller.registerHandler(RestRequest.Method.GET, "/{index}/_esearch", this);
 	}
 
 	protected RestChannelConsumer throwError(String error) {
@@ -41,10 +43,10 @@ public class RocchioExpandRestAction extends BaseRestHandler {
 			channel.sendResponse(new BytesRestResponse(status, builder));
 		};
 	}
-
+	
 	@Override
 	protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) throws IOException {
-		this.logger.debug("Executing Rocchio expand action!");
+		this.logger.debug("Executing Rocchio expand + search action!");
 
 		// Required path parameter
 		String index = request.param("index");
@@ -65,16 +67,6 @@ public class RocchioExpandRestAction extends BaseRestHandler {
 		this.logger.info(String.format("Starting Rocchio (%s,%s,%s,%s,%d,%d,%.2f,%.2f,%.2f,%.2f)", index, query, type,
 				field, fbDocs, fbTerms, alpha, beta, k1, b));
 
-
-		// TODO: Check that type has documents added to it?
-		// TODO: Check that the documents in the type contain the desired field?
-
-		// Examine the index to verify that store == true for the desired
-		// index/type/field combination]
-
-		// TODO: Check that term vectors/fields stats are available for the
-		// desired index/type/field combination?
-
 		try {
 			this.logger.debug("Starting Rocchio with:");
 			this.logger.debug("   index == " + index);
@@ -90,14 +82,13 @@ public class RocchioExpandRestAction extends BaseRestHandler {
 
 			Rocchio rocchio = new Rocchio(client, index, type, field, alpha, beta, k1, b);
 
-			// Validate input parameters
 			String shortCircuit = rocchio.getErrors(query, fbDocs, fbTerms);
 			if (!Strings.isNullOrEmpty(shortCircuit)) {
 				return throwError(shortCircuit);
 			}
-			
+
 			// Expand the query
-			this.logger.debug("Generating feedback query for (" + query + "," + fbDocs + "," + fbTerms);
+			this.logger.debug("Generating feedback query for (" + query + "," + fbDocs + "," + fbTerms + ")");
 			FeatureVector feedbackQuery = rocchio.expandQuery(query, fbDocs, fbTerms);
 
 			this.logger.debug("Expanding query: " + feedbackQuery.toString());
@@ -105,15 +96,23 @@ public class RocchioExpandRestAction extends BaseRestHandler {
 			String separator = ""; // start out with no separator
 			for (String term : feedbackQuery.getFeatures()) {
 				expandedQuery.append(separator + term + "^" + feedbackQuery.getFeatureWeight(term));
-				separator = " "; // add separator after first iteration
+				separator = "+"; // add separator after first iteration
 			}
+			
+			SearchHits hits = rocchio.runQuery(query, 10);
 
 			this.logger.debug("Responding: " + expandedQuery.toString());
 			return channel -> {
-				XContentBuilder builder = JsonXContent.contentBuilder();
-				builder.startObject();
-				builder.field("query", expandedQuery.toString());
-				builder.endObject();
+				final XContentBuilder builder = JsonXContent.contentBuilder();
+				//builder.startObject();
+				// TODO: Match return value/structure for _search
+				//builder.field("results");
+				builder.startArray();
+				for (SearchHit hit : hits) {
+					builder.value(hit.getSourceAsString());
+				}
+				builder.endArray();
+				//builder.endObject();
 				channel.sendResponse(new BytesRestResponse(RestStatus.OK, builder));
 			};
 		} catch (Exception e) {
