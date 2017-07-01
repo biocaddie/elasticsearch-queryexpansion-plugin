@@ -66,7 +66,7 @@ Once the artifacts are built, we just need to install them and restart ElasticSe
 ```
 
 ## Test
-You should now be able to test the new endpoint using the herlper script or via raw `curl`:
+You should now be able to test the new endpoint using the helper script or via raw `curl`:
 ```bash
 $ ./test.sh
 {"query":"sclerosis^2.798773920190095 study^0.4716440174771813 disease^0.584064093901503 or^0.3394485958568884 patients^0.79730633189081 multiple^1.941784058395449 was^0.4222225922753828 is^0.38702376034952857 to^0.4432445617796595 on^0.3817563584164061"}
