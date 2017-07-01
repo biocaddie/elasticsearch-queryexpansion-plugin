@@ -14,6 +14,7 @@ For now, cloning the source is required to run the plugin (see TODOs):
 git clone bodom0015/elasticsearch-queryexpansion-plugin queryexpansion && cd queryexpansion 
 ```
 To use:
+
 0. [Setup](README.md#setup)
 1. [Build](README.md#build)
 2. [Load](README.md#load)
