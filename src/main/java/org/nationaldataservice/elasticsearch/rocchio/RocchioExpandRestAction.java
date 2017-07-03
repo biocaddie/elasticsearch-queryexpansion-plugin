@@ -61,9 +61,14 @@ public class RocchioExpandRestAction extends BaseRestHandler {
 		double b = Double.parseDouble(request.param("b", "0.75"));
 		int fbDocs = Integer.parseInt(request.param("fbDocs", "10"));
 		int fbTerms = Integer.parseInt(request.param("fbTerms", "10"));
+		
+		// Optional stoplist (defaults to null)
+		String stoplist = request.param("stoplist", null);
 
-		this.logger.info(String.format("Starting RocchioExpand (%s,%s,%s,%s,%d,%d,%.2f,%.2f,%.2f,%.2f)", index, query, type,
-				field, fbDocs, fbTerms, alpha, beta, k1, b));
+		// Log the request with our full parameter set
+		this.logger.info(String.format("Starting RocchioExpand (index=%s, query=%s, type=%s, "
+				+ "field=%s, fbDocs=%d, fbTerms=%d, α=%.2f, β=%.2f, k1=%.2f, b=%.2f, stoplist=%s)", 
+				index, query, type, field, fbDocs, fbTerms, alpha, beta, k1, b, stoplist));
 
 
 		// TODO: Check that type has documents added to it?
@@ -76,19 +81,7 @@ public class RocchioExpandRestAction extends BaseRestHandler {
 		// desired index/type/field combination?
 
 		try {
-			this.logger.debug("Starting Rocchio with:");
-			this.logger.debug("   index == " + index);
-			this.logger.debug("   query == " + query);
-			this.logger.debug("   type == " + type);
-			this.logger.debug("   field == " + field);
-			this.logger.debug("   fbTerms == " + fbTerms);
-			this.logger.debug("   fbDocs == " + fbDocs);
-			this.logger.debug("   alpha == " + alpha);
-			this.logger.debug("   beta == " + beta);
-			this.logger.debug("   k1 == " + k1);
-			this.logger.debug("   b == " + b);
-
-			Rocchio rocchio = new Rocchio(client, index, type, field, alpha, beta, k1, b);
+			Rocchio rocchio = new Rocchio(client, index, type, field, alpha, beta, k1, b, stoplist);
 
 			// Validate input parameters
 			String shortCircuit = rocchio.validate(query, fbDocs, fbTerms);
@@ -100,6 +93,7 @@ public class RocchioExpandRestAction extends BaseRestHandler {
 			this.logger.debug("Generating feedback query for (" + query + "," + fbDocs + "," + fbTerms);
 			FeatureVector feedbackQuery = rocchio.expandQuery(query, fbDocs, fbTerms);
 
+			// Format our expanded query with Lucene's boosting syntax
 			this.logger.debug("Expanding query: " + feedbackQuery.toString());
 			StringBuffer expandedQuery = new StringBuffer();
 			String separator = ""; // start out with no separator
@@ -108,6 +102,7 @@ public class RocchioExpandRestAction extends BaseRestHandler {
 				separator = " "; // add separator after first iteration
 			}
 
+			// Return the expanded query (don't actually perform the search)
 			this.logger.debug("Responding: " + expandedQuery.toString());
 			return channel -> {
 				XContentBuilder builder = JsonXContent.contentBuilder();

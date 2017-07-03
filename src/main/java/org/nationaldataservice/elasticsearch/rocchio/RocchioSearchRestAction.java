@@ -81,15 +81,16 @@ public class RocchioSearchRestAction extends BaseRestHandler {
 		String stoplist = request.param("stoplist", null);
 		
 		// Optional searchIndex (if different from the index we are expanding against)
-		String searchIndex = request.param("searchIndex", index);
+		String expandOn = request.param("expandOn", index);
 
 		// Log the request with our full parameter set
-		this.logger.info(String.format("Starting RocchioSearch (index=%s, searchIndex=%s, query=%s, "
+		this.logger.info(String.format("Starting RocchioSearch (index=%s, expandOn=%s, query=%s, "
 				+ "type=%s, field=%s, fbDocs=%d, fbTerms=%d, α=%.2f, β=%.2f, k1=%.2f, b=%.2f, stoplist=%s)", 
-				index, searchIndex, query, type, field, fbDocs, fbTerms, alpha, beta, k1, b, stoplist));
+				index, expandOn, query, type, field, fbDocs, fbTerms, alpha, beta, k1, b, stoplist));
 
 		try {
-			Rocchio rocchio = new Rocchio(client, index, type, field, alpha, beta, k1, b, stoplist);
+			// Run Rocchio expansion against the index given by "expandOn"
+			Rocchio rocchio = new Rocchio(client, expandOn, type, field, alpha, beta, k1, b, stoplist);
 
 			String shortCircuit = rocchio.validate(query, fbDocs, fbTerms);
 			if (!Strings.isNullOrEmpty(shortCircuit)) {
@@ -100,6 +101,7 @@ public class RocchioSearchRestAction extends BaseRestHandler {
 			this.logger.debug("Generating feedback query for (" + query + "," + fbDocs + "," + fbTerms + ")");
 			FeatureVector feedbackQuery = rocchio.expandQuery(query, fbDocs, fbTerms);
 
+			// Format our expanded query with Lucene's boosting syntax
 			this.logger.debug("Expanding query: " + feedbackQuery.toString());
 			StringBuffer expandedQuery = new StringBuffer();
 			String separator = ""; // start out with no separator
@@ -108,9 +110,11 @@ public class RocchioSearchRestAction extends BaseRestHandler {
 				separator = "+"; // add separator after first iteration
 			}
 			
-			this.logger.info("Running expanded query against: " + searchIndex);
-			SearchHits hits = rocchio.runQuery(searchIndex, query, 10);
+			// Now, perform the actual search with the expanded query
+			this.logger.info("Running expanded query against: " + index);
+			SearchHits hits = rocchio.runQuery(index, query, 10);
 
+			// Build of a response of our search hits
 			this.logger.debug("Responding: " + expandedQuery.toString());
 			return channel -> {
 				final XContentBuilder builder = JsonXContent.contentBuilder();
