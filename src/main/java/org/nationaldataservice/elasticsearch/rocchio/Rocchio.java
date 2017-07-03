@@ -41,21 +41,19 @@ import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 
 import edu.gslis.textrepresentation.FeatureVector;
+import edu.gslis.utils.Stopper;
 import joptsimple.internal.Strings;
 
 /**
  * Rocchio implementation for Lucene based on:
  * https://github.com/gtsherman/lucene/blob/master/src/main/java/org/retrievable/lucene/searching/expansion/Rocchio.java
  * 
- * 
- * 
- * Todo: Specify stoplist
  */
 @SuppressWarnings("deprecation")
 public class Rocchio {
 	private Logger logger = ESLoggerFactory.getLogger(Rocchio.class);
 
-	// FIXME: These are just random guesses
+	// FIXME: These are just random guesses see NDS-958
 	private static int ALPHA_BETA_MIN = 0;
 	private static int ALPHA_BETA_MAX = 1;
 	private static int K1_MIN = 0;
@@ -72,6 +70,8 @@ public class Rocchio {
 	private double beta; // Rocchio beta
 	private double k1; // BM25 k1
 	private double b; // BM25 b
+	
+	private Stopper stopper = null;
 
 	// Global statistics (there's certainly a better way to handle this)
 	long docCount = 0; // Number of documents in index
@@ -94,7 +94,7 @@ public class Rocchio {
 	 * @param b
 	 */
 	public Rocchio(Client client, String index, String type, String field, double alpha, double beta, double k1,
-			double b) {
+			double b, String stoplist) {
 		this.client = client;
 		this.index = index;
 		this.type = type;
@@ -103,6 +103,27 @@ public class Rocchio {
 		this.beta = beta;
 		this.k1 = k1;
 		this.b = b;
+		
+		this.setStoplist(stoplist);
+	}
+
+	public Rocchio(Client client, String index, String type, String field, double alpha, double beta, double k1,
+			double b) {
+		this(client, index, type, field, alpha, beta, k1, b, null);
+	}
+	
+	// Assumes a space-delimited string
+	private void setStoplist(String stoplist) {
+		if (Strings.isNullOrEmpty(stoplist)) {
+			this.stopper = null;
+			return;
+		}
+		
+		this.stopper = new Stopper();
+		String[] stopwords = stoplist.split(" ");
+		for (String term : stopwords) {
+			stopper.addStopword(term);
+		}
 	}
 
 	private void fail(String errorMessage) {
@@ -112,7 +133,7 @@ public class Rocchio {
 
 	private void failIf(Supplier<Boolean> condition, String errorMessage) {
 		if (condition.get()) {
-			this.logger.error("Condition failed");
+			this.logger.error("Condition failed: " + condition.toString());
 			fail(errorMessage);
 		}
 	}
@@ -121,7 +142,8 @@ public class Rocchio {
 
 	/**
 	 * Verifies that String and numeric values are within their allowed ranges,
-	 * 
+	 *     then ensures that term vectors are properly enabled on the target index.
+	 *     
 	 * @param index
 	 *            the String index to expand against
 	 * @param query
@@ -143,21 +165,21 @@ public class Rocchio {
 	 * @param b
 	 *            the double Rocchio b parameter
 	 * @return the String error message, or null if no errors are encountered
-	 * @throws IOException  if the indexMetaData fails to deserialize into a map
+	 * @throws IOException if the indexMetaData fails to deserialize into a map
 	 */
-	protected String getErrors(String query, int fbDocs, int fbTerms) throws IOException {
-		if (Strings.isNullOrEmpty(index)) {
-			return "You must specify an index to expand against";
-		} else if (Strings.isNullOrEmpty(query)) {
+	protected String validate(String query, int fbDocs, int fbTerms) throws IOException {
+		if (Strings.isNullOrEmpty(query)) {
 			return "You must specify a query to expand";
-		} else if (Strings.isNullOrEmpty(type)) {
-			return "You must specify a type";
-		} else if (Strings.isNullOrEmpty(field)) {
-			return "You must specify a field";
 		} else if (fbDocs < 1) {
 			return "Number of feedback documents (fbDocs) must be a positive integer";
 		} else if (fbTerms < 1) {
 			return "Number of feedback terms (fbTerms) must be a positive integer";
+		} else if (Strings.isNullOrEmpty(index)) {
+			return "You must specify an index to expand against";
+		} else if (Strings.isNullOrEmpty(type)) {
+			return "You must specify a type";
+		} else if (Strings.isNullOrEmpty(field)) {
+			return "You must specify a field";
 		} else if (ALPHA_BETA_MIN > alpha || alpha > ALPHA_BETA_MAX) {
 			return "Alpha value must be a real number between " + ALPHA_BETA_MIN + " and " + ALPHA_BETA_MAX;
 		} else if (ALPHA_BETA_MIN > beta || beta > ALPHA_BETA_MAX) {
@@ -174,7 +196,7 @@ public class Rocchio {
 	 * Returns an error message if term vectors are misconfigured. Otherwise,
 	 * returns null.
 	 * 
-	 * TODO: Some of this can potentially be called at plugin startup, if we
+	 * TODO: Some of this could potentially be called at plugin startup, if we
 	 * know what index/type we plan to expand against ahead of time...
 	 * 
 	 * @param client
@@ -244,10 +266,9 @@ public class Rocchio {
 			return null;
 		}
 		
-		// TODO: Check that type has documents added to it?
-		// TODO: Check that the documents in the type contain the desired field?
-
-		// TODO: Check that term vectors/fields stats are available for the
+		// TODO: NDS-958 - Check that type has documents added to it?
+		// TODO: NDS-958 - Check that the documents in the type contain the desired field?
+		// TODO: NDS-958 - Check that term vectors/fields stats are available for the
 		// desired index/type/field combination?
 
 		// If neither of the above triggered, then we didn't have the right term
@@ -267,7 +288,7 @@ public class Rocchio {
 	 *            Number of results to return
 	 * @return SearchHits object
 	 */
-	public SearchHits runQuery(String query, int numDocs) {
+	public SearchHits runQuery(String index, String query, int numDocs) {
 		SearchRequestBuilder searchRequestBuilder = client.prepareSearch(index);
 		QueryStringQueryBuilder queryStringQueryBuilder = new QueryStringQueryBuilder(query);
 		searchRequestBuilder.setQuery(queryStringQueryBuilder).setSize(numDocs);
@@ -287,7 +308,7 @@ public class Rocchio {
 	 * @throws IOException
 	 */
 	private FeatureVector getFeedbackVector(SearchHits hits, int fbDocs) throws IOException {
-		FeatureVector summedDocVec = new FeatureVector(null);
+		FeatureVector summedDocVec = new FeatureVector(this.stopper);
 
 		// Use the multi termvector request to get vectors for all documents at
 		// once
@@ -308,7 +329,7 @@ public class Rocchio {
 		// document length
 		// Store document frequencies for encountered terms in dfStats map.
 		for (MultiTermVectorsItemResponse item : mtvresponse.getResponses()) {
-			FeatureVector docVec = new FeatureVector(null);
+			FeatureVector docVec = new FeatureVector(this.stopper);
 
 			TermVectorsResponse tv = item.getResponse();
 			Fields fields = tv.getFields();
@@ -350,7 +371,7 @@ public class Rocchio {
 		}
 
 		// Multiply the summed term vector by beta / |Dr|
-		FeatureVector relDocTermVec = new FeatureVector(null);
+		FeatureVector relDocTermVec = new FeatureVector(this.stopper);
 		for (String term : summedDocVec.getFeatures()) {
 			relDocTermVec.addTerm(term, summedDocVec.getFeatureWeight(term) * beta / fbDocs);
 		}
@@ -367,13 +388,13 @@ public class Rocchio {
 	 */
 	public FeatureVector getQueryVector(String query) {
 		// Create a query vector and scale by alpha
-		FeatureVector rawQueryVec = new FeatureVector(null);
+		FeatureVector rawQueryVec = new FeatureVector(this.stopper);
 		rawQueryVec.addText(query);
 
-		FeatureVector summedQueryVec = new FeatureVector(null);
+		FeatureVector summedQueryVec = new FeatureVector(this.stopper);
 		computeBM25Weights(rawQueryVec, summedQueryVec);
 
-		FeatureVector queryTermVec = new FeatureVector(null);
+		FeatureVector queryTermVec = new FeatureVector(this.stopper);
 		for (String term : rawQueryVec.getFeatures()) {
 			queryTermVec.addTerm(term, summedQueryVec.getFeatureWeight(term) * alpha);
 		}
@@ -395,7 +416,7 @@ public class Rocchio {
 	 */
 	public FeatureVector expandQuery(String query, int fbDocs, int fbTerms) throws IOException {
 		// Run the initial query
-		SearchHits hits = runQuery(query, fbDocs);
+		SearchHits hits = runQuery(this.index, query, fbDocs);
 
 		// Get the feedback document vector, weighted by beta
 		FeatureVector feedbackVector = getFeedbackVector(hits, fbDocs);

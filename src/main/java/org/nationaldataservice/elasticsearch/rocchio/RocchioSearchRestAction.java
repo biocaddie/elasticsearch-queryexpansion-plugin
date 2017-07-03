@@ -30,15 +30,28 @@ public class RocchioSearchRestAction extends BaseRestHandler {
 	}
 
 	protected RestChannelConsumer throwError(String error) {
-		return throwError(error, RestStatus.BAD_REQUEST);
+		return throwError(new RocchioException(error));
 	}
 
-	protected RestChannelConsumer throwError(String error, RestStatus status) {
-		this.logger.error("ERROR: " + error);
+	protected RestChannelConsumer throwError(RocchioException ex) {
+		return throwError(ex, RestStatus.BAD_REQUEST);
+	}
+
+	protected RestChannelConsumer throwError(RocchioException ex, RestStatus status) {
+		this.logger.error("ERROR: " + ex.getMessage(), ex);
+		
+		// Log nested errors
+		Throwable current = ex.getCause();
+		while (current != null) {
+			if (ex.getCause() != null) {
+				this.logger.error("Caused By: " + current.getMessage(), current);
+			}
+		}
+		
 		return channel -> {
 			XContentBuilder builder = JsonXContent.contentBuilder();
 			builder.startObject();
-			builder.field("error", error);
+			builder.field("error", ex.getMessage());
 			builder.endObject();
 			channel.sendResponse(new BytesRestResponse(status, builder));
 		};
@@ -63,26 +76,22 @@ public class RocchioSearchRestAction extends BaseRestHandler {
 		double b = Double.parseDouble(request.param("b", "0.75"));
 		int fbDocs = Integer.parseInt(request.param("fbDocs", "10"));
 		int fbTerms = Integer.parseInt(request.param("fbTerms", "10"));
+		
+		// Optional stoplist (defaults to null)
+		String stoplist = request.param("stoplist", null);
+		
+		// Optional searchIndex (if different from the index we are expanding against)
+		String searchIndex = request.param("searchIndex", index);
 
-		this.logger.info(String.format("Starting Rocchio (%s,%s,%s,%s,%d,%d,%.2f,%.2f,%.2f,%.2f)", index, query, type,
-				field, fbDocs, fbTerms, alpha, beta, k1, b));
+		// Log the request with our full parameter set
+		this.logger.info(String.format("Starting RocchioSearch (index=%s, searchIndex=%s, query=%s, "
+				+ "type=%s, field=%s, fbDocs=%d, fbTerms=%d, α=%.2f, β=%.2f, k1=%.2f, b=%.2f, stoplist=%s)", 
+				index, searchIndex, query, type, field, fbDocs, fbTerms, alpha, beta, k1, b, stoplist));
 
 		try {
-			this.logger.debug("Starting Rocchio with:");
-			this.logger.debug("   index == " + index);
-			this.logger.debug("   query == " + query);
-			this.logger.debug("   type == " + type);
-			this.logger.debug("   field == " + field);
-			this.logger.debug("   fbTerms == " + fbTerms);
-			this.logger.debug("   fbDocs == " + fbDocs);
-			this.logger.debug("   alpha == " + alpha);
-			this.logger.debug("   beta == " + beta);
-			this.logger.debug("   k1 == " + k1);
-			this.logger.debug("   b == " + b);
+			Rocchio rocchio = new Rocchio(client, index, type, field, alpha, beta, k1, b, stoplist);
 
-			Rocchio rocchio = new Rocchio(client, index, type, field, alpha, beta, k1, b);
-
-			String shortCircuit = rocchio.getErrors(query, fbDocs, fbTerms);
+			String shortCircuit = rocchio.validate(query, fbDocs, fbTerms);
 			if (!Strings.isNullOrEmpty(shortCircuit)) {
 				return throwError(shortCircuit);
 			}
@@ -99,14 +108,15 @@ public class RocchioSearchRestAction extends BaseRestHandler {
 				separator = "+"; // add separator after first iteration
 			}
 			
-			SearchHits hits = rocchio.runQuery(query, 10);
+			this.logger.info("Running expanded query against: " + searchIndex);
+			SearchHits hits = rocchio.runQuery(searchIndex, query, 10);
 
 			this.logger.debug("Responding: " + expandedQuery.toString());
 			return channel -> {
 				final XContentBuilder builder = JsonXContent.contentBuilder();
 				//builder.startObject();
 				// TODO: Match return value/structure for _search
-				//builder.field("results");
+				//builder.field("hits");
 				builder.startArray();
 				for (SearchHit hit : hits) {
 					builder.value(hit.getSourceAsString());
@@ -122,7 +132,7 @@ public class RocchioSearchRestAction extends BaseRestHandler {
 			if (Strings.isNullOrEmpty(errorMessage)) {
 				errorMessage = "An unknown error was encountered.";
 			}
-			return throwError(errorMessage);
+			return throwError(new RocchioException(errorMessage, e.getCause()));
 		}
 	}
 }

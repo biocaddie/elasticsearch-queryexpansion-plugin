@@ -62,7 +62,7 @@ public class RocchioExpandRestAction extends BaseRestHandler {
 		int fbDocs = Integer.parseInt(request.param("fbDocs", "10"));
 		int fbTerms = Integer.parseInt(request.param("fbTerms", "10"));
 
-		this.logger.info(String.format("Starting Rocchio (%s,%s,%s,%s,%d,%d,%.2f,%.2f,%.2f,%.2f)", index, query, type,
+		this.logger.info(String.format("Starting RocchioExpand (%s,%s,%s,%s,%d,%d,%.2f,%.2f,%.2f,%.2f)", index, query, type,
 				field, fbDocs, fbTerms, alpha, beta, k1, b));
 
 
@@ -91,7 +91,7 @@ public class RocchioExpandRestAction extends BaseRestHandler {
 			Rocchio rocchio = new Rocchio(client, index, type, field, alpha, beta, k1, b);
 
 			// Validate input parameters
-			String shortCircuit = rocchio.getErrors(query, fbDocs, fbTerms);
+			String shortCircuit = rocchio.validate(query, fbDocs, fbTerms);
 			if (!Strings.isNullOrEmpty(shortCircuit)) {
 				return throwError(shortCircuit);
 			}
