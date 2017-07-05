@@ -60,7 +60,44 @@ public class Rocchio {
 	private static int K1_MAX = 2;
 	private static int B_MIN = 0;
 	private static int B_MAX = 1;
-
+	
+	// Error Strings returned from validate()
+	public static String NULL_INDEX_ERROR = "You must specify an index to expand against";
+	public static String NULL_QUERY_ERROR = "You must specify a query to expand";
+	public static String NULL_TYPE_ERROR = "You must specify a type";
+	public static String NULL_FIELD_ERROR = "You must specify a field";
+	public static String INVALID_FB_TERMS_ERROR = "Number of feedback terms (fbTerms) must be a positive integer";
+	public static String INVALID_FB_DOCS_ERROR = "Number of feedback documents (fbDocs) must be a positive integer";
+	public static String INVALID_ALPHA_ERROR = "Alpha value must be a real number between " + ALPHA_BETA_MIN + " and " + ALPHA_BETA_MAX;
+	public static String INVALID_BETA_ERROR = "Beta value must be a real number between " + ALPHA_BETA_MIN + " and " + ALPHA_BETA_MAX;
+	public static String INVALID_K1_ERROR = "K1 value must be a real number between " + K1_MIN + " and " + K1_MAX;
+	public static String INVALID_B_ERROR = "B value must be a real number between " + B_MIN + " and " + B_MAX;
+	
+	// Error Strings returned from ensureTermVectors()
+	public static String NONEXISTENT_INDEX_ERROR(String index) {
+		return "Index does not exist: " + index;
+	}
+	
+	public static String NONEXISTENT_TYPE_ERROR(String index, String type) {
+		return "No mapping found on index " + index + " for: " + type;
+	}
+	
+	public static String DISABLED_TERM_VECTORS_ERROR(String index, String type, String field) {
+		return "Term vectors storage for on " + index + "." + type + "." + field + " has been disabled";
+	}
+	
+	public static String UNCONFIGURED_TERM_VECTORS_ERROR(String index, String type, String field) {
+		return "Term vectors storage for on index " + index + "." + type + "." + field + " has not been configured";
+	}
+	
+	public static String MISSING_TERM_VECTOR_FIELD(String index, String type) {
+		return "Error: no fields received for term vector - " + index + "/" + type;
+	}
+	
+	public static String MISSING_FIELD_TERMS(String index, String type, String field) {
+		return "Error: no terms received for field - " + index + "/" + type + "/" + field;
+	}
+	
 	private Client client; // ElasticSearch client
 	private String index; // ElasticSearch index name
 	private String type; // Document type
@@ -167,27 +204,27 @@ public class Rocchio {
 	 * @return the String error message, or null if no errors are encountered
 	 * @throws IOException if the indexMetaData fails to deserialize into a map
 	 */
-	protected String validate(String query, int fbDocs, int fbTerms) throws IOException {
+	public String validate(String query, int fbDocs, int fbTerms) throws IOException {
 		if (Strings.isNullOrEmpty(query)) {
-			return "You must specify a query to expand";
+			return NULL_QUERY_ERROR;
 		} else if (fbDocs < 1) {
-			return "Number of feedback documents (fbDocs) must be a positive integer";
+			return INVALID_FB_DOCS_ERROR;
 		} else if (fbTerms < 1) {
-			return "Number of feedback terms (fbTerms) must be a positive integer";
+			return INVALID_FB_TERMS_ERROR;
 		} else if (Strings.isNullOrEmpty(index)) {
-			return "You must specify an index to expand against";
+			return NULL_INDEX_ERROR;
 		} else if (Strings.isNullOrEmpty(type)) {
-			return "You must specify a type";
+			return NULL_TYPE_ERROR;
 		} else if (Strings.isNullOrEmpty(field)) {
-			return "You must specify a field";
+			return NULL_FIELD_ERROR;
 		} else if (ALPHA_BETA_MIN > alpha || alpha > ALPHA_BETA_MAX) {
-			return "Alpha value must be a real number between " + ALPHA_BETA_MIN + " and " + ALPHA_BETA_MAX;
+			return INVALID_ALPHA_ERROR;
 		} else if (ALPHA_BETA_MIN > beta || beta > ALPHA_BETA_MAX) {
-			return "Beta value must be a real number between " + ALPHA_BETA_MIN + " and " + ALPHA_BETA_MAX;
+			return INVALID_BETA_ERROR;
 		} else if (K1_MIN > k1 || k1 > K1_MAX) {
-			return "K1 value must be a real number between " + K1_MIN + " and " + K1_MAX;
+			return INVALID_K1_ERROR;
 		} else if (B_MIN > b || b > B_MAX) {
-			return "B value must be a real number between " + B_MIN + " and " + B_MAX;
+			return INVALID_B_ERROR;
 		}
 		return this.ensureTermVectors();
 	}
@@ -219,13 +256,13 @@ public class Rocchio {
 				.getState().getMetaData().index(index);
 
 		if (indexMetaData == null) {
-			return "Index does not exist";
+			return NONEXISTENT_INDEX_ERROR(index);
 		}
 
 		// Verify that the index contains the desired type
 		ImmutableOpenMap<String, MappingMetaData> indexMap = indexMetaData.getMappings();
 		if (!indexMap.containsKey(type)) {
-			return "No mapping found on index " + index + " for: " + type;
+			return NONEXISTENT_TYPE_ERROR(index, type);
 		}
 
 		// Grab the type and analyze it to locate the field
@@ -248,9 +285,9 @@ public class Rocchio {
 			// Verify that term vector storage is enabled for all fields
 			boolean storeEnabled = (boolean) allFieldProperties.get("store");
 			if (!storeEnabled) {
-				this.logger.error(
-						"Term vectors storage for on " + index + "." + type + "." + field + " has been disabled");
-				return "Term vectors storage for " + index + "." + type + "." + field + " has been disabled";
+				String errorMessage = DISABLED_TERM_VECTORS_ERROR(index, type, field);
+				this.logger.error(errorMessage);
+				return errorMessage;
 			}
 
 			return null;
@@ -258,9 +295,9 @@ public class Rocchio {
 			// Verify that term vector storage is enabled at the field level
 			boolean storeEnabled = (boolean) fieldProperties.get("store");
 			if (!storeEnabled) {
-				this.logger.error(
-						"Term vectors storage for on index " + index + "." + type + "." + field + " has been disabled");
-				return "Term vectors storage for " + index + "." + type + "." + field + " has been disabled";
+				String errorMessage = DISABLED_TERM_VECTORS_ERROR(index, type, field);
+				this.logger.error(errorMessage);
+				return errorMessage;
 			}
 
 			return null;
@@ -273,9 +310,9 @@ public class Rocchio {
 
 		// If neither of the above triggered, then we didn't have the right term
 		// vectors initialized on our index
-		this.logger.error(
-				"Term vectors storage for on index " + index + "." + type + "." + field + " has not been configured");
-		return "Term vectors storage for " + index + "." + type + "." + field + " has not been configured";
+		String errorMessage = UNCONFIGURED_TERM_VECTORS_ERROR(index, type, field);
+		this.logger.error(errorMessage);
+		return errorMessage;
 	}
 
 	/**
@@ -288,13 +325,11 @@ public class Rocchio {
 	 *            Number of results to return
 	 * @return SearchHits object
 	 */
-	public SearchHits runQuery(String index, String query, int numDocs) {
-		SearchRequestBuilder searchRequestBuilder = client.prepareSearch(index);
+	public SearchResponse runQuery(String index, String query, int numDocs) {
 		QueryStringQueryBuilder queryStringQueryBuilder = new QueryStringQueryBuilder(query);
-		searchRequestBuilder.setQuery(queryStringQueryBuilder).setSize(numDocs);
-		SearchResponse response = searchRequestBuilder.execute().actionGet();
-		SearchHits hits = response.getHits();
-		return hits;
+		return client.prepareSearch(index).setQuery(queryStringQueryBuilder)
+										  .setSize(numDocs)
+										  .execute().actionGet();
 	}
 
 	/**
@@ -313,7 +348,7 @@ public class Rocchio {
 		// Use the multi termvector request to get vectors for all documents at
 		// once
 		MultiTermVectorsRequestBuilder mtbuilder = client.prepareMultiTermVectors();
-		for (SearchHit hit : hits) {
+		for (SearchHit hit : hits.hits()) {
 			String id = hit.getId();
 			TermVectorsRequest termVectorsRequest = new TermVectorsRequest();
 			termVectorsRequest.index(index).id(id).type(this.type).termStatistics(true).offsets(false).positions(false)
@@ -333,11 +368,10 @@ public class Rocchio {
 
 			TermVectorsResponse tv = item.getResponse();
 			Fields fields = tv.getFields();
-			failIf(() -> tv == null, "Error: no fields received for term vector - " + this.index + "/" + this.type);
+			failIf(() -> tv == null, MISSING_TERM_VECTOR_FIELD(index, type));
 
 			Terms terms = fields.terms(this.field);
-			failIf(() -> terms == null,
-					"Error: no terms received for field - " + this.index + "/" + this.type + "/" + this.field);
+			failIf(() -> terms == null, MISSING_FIELD_TERMS(index, type, field));
 
 			// These are global settings and will be the same for all
 			// TermVectorResponses.
@@ -416,7 +450,7 @@ public class Rocchio {
 	 */
 	public FeatureVector expandQuery(String query, int fbDocs, int fbTerms) throws IOException {
 		// Run the initial query
-		SearchHits hits = runQuery(this.index, query, fbDocs);
+		SearchHits hits = runQuery(this.index, query, fbDocs).getHits();
 
 		// Get the feedback document vector, weighted by beta
 		FeatureVector feedbackVector = getFeedbackVector(hits, fbDocs);

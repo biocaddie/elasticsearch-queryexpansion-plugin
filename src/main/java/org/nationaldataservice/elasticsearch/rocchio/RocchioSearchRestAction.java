@@ -112,7 +112,7 @@ public class RocchioSearchRestAction extends BaseRestHandler {
 			
 			// Now, perform the actual search with the expanded query
 			this.logger.info("Running expanded query against: " + index);
-			SearchHits hits = rocchio.runQuery(index, query, 10);
+			SearchHits hits = rocchio.runQuery(index, query, 10).getHits();
 
 			// Build of a response of our search hits
 			this.logger.debug("Responding: " + expandedQuery.toString());
