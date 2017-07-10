@@ -2,32 +2,33 @@ package org.nationaldataservice.elasticsearch.rocchio.test.unit;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-import static org.mockito.Matchers.*;
-
 import java.io.IOException;
 import java.util.LinkedHashMap;
 
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.ListenableActionFuture;
+import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.termvectors.MultiTermVectorsRequest;
 import org.elasticsearch.action.termvectors.MultiTermVectorsRequestBuilder;
 import org.elasticsearch.action.termvectors.MultiTermVectorsResponse;
+import org.elasticsearch.client.AdminClient;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.ClusterAdminClient;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
-import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.cluster.metadata.MetaData;
+import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.index.query.QueryStringQueryBuilder;
-import org.elasticsearch.test.ESTestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.nationaldataservice.elasticsearch.rocchio.Rocchio;
 
@@ -40,7 +41,6 @@ public class TestRocchio {
 	
 	// TODO: Mock these
 	private Client client;
-	private IndexMetaData indexMetaData;
 	
 	// Our common test parameter set (individual tests can still use one-off values)
 	private static String TEST_EXPAND_INDEX = "biocaddie";
@@ -72,12 +72,38 @@ public class TestRocchio {
 		when(mockTypeMetadata.getSourceAsMap()).thenReturn(typeMap);
 
 		IndexMetaData mockIndexMetaData = mock(IndexMetaData.class);
-		MappingMetaData mockIndexMappingMetadata = mock(MappingMetaData.class);
-		when(mockIndexMetaData.getMappings().get(anyString())).thenReturn(mockTypeMetadata);
+		//ImmutableOpenMap<String, MappingMetaData> mockIndexMappingMetadata = new ImmutableOpenMap<String, MappingMetaData>();
+		
+		// FIXME: We can't mock final classes...
+		//ImmutableOpenMap<String, MappingMetaData> mockIndexMappingMetadata = (ImmutableOpenMap<String, MappingMetaData>) mock(ImmutableOpenMap.class);
+		//when(mockIndexMetaData.getMappings()).thenReturn(mockIndexMappingMetadata);
+		//when(mockIndexMappingMetadata.get(anyString())).thenReturn(mockTypeMetadata);
 		
 		// Initialize our mocked ElasticSearch environment
-		when(this.client.admin().cluster().state(Requests.clusterStateRequest()).actionGet()
-				.getState().getMetaData().index(anyString())).thenReturn(mockIndexMetaData);
+		/*when(this.client.admin().cluster().state(Requests.clusterStateRequest()).actionGet()
+				.getState().getMetaData().index(anyString())).thenReturn(mockIndexMetaData);*/
+		
+		AdminClient adminClient = mock(AdminClient.class);
+		when(client.admin()).thenReturn(adminClient);
+		
+		ClusterAdminClient clusterAdminClient = mock(ClusterAdminClient.class);
+		when(adminClient.cluster()).thenReturn(clusterAdminClient);
+		
+		ActionFuture<ClusterStateResponse> clusterStateFuture = (ActionFuture<ClusterStateResponse>) mock(ActionFuture.class);
+		when(clusterAdminClient.state(Requests.clusterStateRequest())).thenReturn(clusterStateFuture);
+		
+		ClusterStateResponse clusterStateResponse = mock(ClusterStateResponse.class);
+		when(clusterStateFuture.actionGet()).thenReturn(clusterStateResponse);
+		
+		ClusterState clusterState = mock(ClusterState.class);
+		when(clusterStateResponse.getState()).thenReturn(clusterState);
+		
+		MetaData clusterMetadata = mock(MetaData.class);
+		when(clusterState.getMetaData()).thenReturn(clusterMetadata);
+		
+		when(clusterMetadata.index(anyString())).thenReturn(mockIndexMetaData);
+		
+		
 	}
 	
 	private void mockTermVectorRequest() {
@@ -87,7 +113,7 @@ public class TestRocchio {
 		MultiTermVectorsResponse mtvResponse = mock(MultiTermVectorsResponse.class);
 		
 		@SuppressWarnings("unchecked")
-		ListenableActionFuture<MultiTermVectorsResponse> mockedFuture = (ListenableActionFuture<MultiTermVectorsResponse>) mock(ListenableActionFuture.class);
+		ListenableActionFuture<MultiTermVectorsResponse> mockedFuture = mock(ListenableActionFuture.class);
 
 		when(multiTermVectorBuilder.execute()).thenReturn(mockedFuture);
 		when(mockedFuture.actionGet()).thenReturn(mtvResponse);
@@ -101,7 +127,7 @@ public class TestRocchio {
 		when(srBuilder.setSize(anyInt())).thenReturn(srBuilder);
 		
 		@SuppressWarnings("unchecked")
-		ListenableActionFuture<SearchResponse> mockedFuture = (ListenableActionFuture<SearchResponse>) mock(ListenableActionFuture.class);
+		ListenableActionFuture<SearchResponse> mockedFuture = mock(ListenableActionFuture.class);
 		when(srBuilder.execute()).thenReturn(mockedFuture);
 		
 		// TODO: Somehow get the values to return here for expand / search
@@ -126,6 +152,8 @@ public class TestRocchio {
 	@Before
 	public void setUp() throws IOException {
 		this.client = mock(TransportClient.class);
+		
+		// FIXME: Can't mock this due to final class
 		//mockIndexMetaDataRequest();
 		mockTermVectorRequest();
 		mockSearchRequest();
@@ -146,6 +174,7 @@ public class TestRocchio {
 	}
 	
 	@Test
+	// Test that validate returns null if all parameters are valid
 	public void testValidate() throws IOException {
 		// Validate example input parameters (should be valid)
 		String shouldBeNull = rocchio.validate(TEST_QUERY, TEST_FB_DOCS, TEST_FB_TERMS);
@@ -153,33 +182,41 @@ public class TestRocchio {
 	}
 	
 	@Test
+	// Test that validate fails when query is null
 	public void testValidateInvalidQuery() throws IOException {
 		// Validate example input parameters (should be valid)
-		String shouldNotBeNull = rocchio.validate("", TEST_FB_DOCS, TEST_FB_TERMS);
-		assertNotNull(shouldNotBeNull);
+		String errorMessage = rocchio.validate("", TEST_FB_DOCS, TEST_FB_TERMS);
+		assertNotNull(errorMessage);
+		assertEquals(Rocchio.NULL_QUERY_ERROR, errorMessage);
 	}
 	
 	@Test
+	// Test that validate fails when fbDocs < 1
 	public void testValidateInvalidFeedbackDocuments() throws IOException {
 		// Validate example input parameters (should be valid)
-		String shouldNotBeNull = rocchio.validate(TEST_QUERY, 0, TEST_FB_TERMS);
-		assertNotNull(shouldNotBeNull);
+		String errorMessage = rocchio.validate(TEST_QUERY, 0, TEST_FB_TERMS);
+		assertNotNull(errorMessage);
+		assertEquals(Rocchio.INVALID_FB_DOCS_ERROR, errorMessage);
 	}
 	
 	@Test
+	// Test that validate fails when fbTerms < 1
 	public void testValidateInvalidFeedbackTerms() throws IOException {
 		// Validate example input parameters (should be valid)
-		String shouldNotBeNull = rocchio.validate(TEST_QUERY, TEST_FB_DOCS, 0);
-		assertNotNull(shouldNotBeNull);
+		String errorMessage = rocchio.validate(TEST_QUERY, TEST_FB_DOCS, 0);
+		assertNotNull(errorMessage);
+		assertEquals(Rocchio.INVALID_FB_TERMS_ERROR, errorMessage);
 	}
 	
 	@Test
+	// Test that we have correctly mocked runQuery
 	public void testRunQuery() {
 		SearchHits hits = rocchio.runQuery(TEST_SEARCH_INDEX, TEST_QUERY, TEST_FB_DOCS).getHits();
 		assertEquals(3, hits.getTotalHits());
 	}
 	
 	@Test
+	// Test that we can expand a query against the test index
 	public void testExpandQuery() throws IOException {
 		// Expand the query
 		FeatureVector feedbackQuery = rocchio.expandQuery(TEST_QUERY, TEST_FB_DOCS, TEST_FB_TERMS);
