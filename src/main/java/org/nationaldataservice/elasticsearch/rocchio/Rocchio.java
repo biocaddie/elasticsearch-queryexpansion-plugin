@@ -37,7 +37,6 @@ import org.elasticsearch.index.query.QueryStringQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 //import org.elasticsearch.transport.client.PreBuiltTransportClient;
-import org.elasticsearch.transport.client.PreBuiltTransportClient;
 
 import edu.gslis.textrepresentation.FeatureVector;
 import edu.gslis.utils.Stopper;
@@ -523,7 +522,7 @@ public class Rocchio {
 	 * @throws ParseException
 	 *             if the command-line arguments cannot be parsed
 	 */
-	public static void main(String[] args) throws IOException, ParseException {
+	/*public static void main(String[] args) throws IOException, ParseException {
 
 		Options options = createOptions();
 		CommandLineParser parser = new GnuParser();
@@ -572,5 +571,5 @@ public class Rocchio {
 
 		transportClient.close();
 
-	}
+	}*/
 }

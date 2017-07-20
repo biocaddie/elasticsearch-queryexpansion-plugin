@@ -31,18 +31,26 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
+		<!-- ElasticSearch groupId -->
+		<elasticsearch.groupid>org.elasticsearch.distribution.zip</elasticsearch.groupid>
+
+		<!-- Dependency versions -->
 		<elasticsearch.version>5.3.2</elasticsearch.version>
 		<elasticsearch.client.version>5.3.2</elasticsearch.client.version>
-		<junit.version>4.12</junit.version>
+		<ir-utils.version>0.2.0-SNAPSHOT</ir-utils.version>
+		<junit.version>4.11</junit.version>
 		<log4j.version>2.6.2</log4j.version>
 		<snakeyaml.version>1.15</snakeyaml.version>
-
 		<xmlbeans.version>2.3.0</xmlbeans.version>
 		<beanutils.version>1.8.3</beanutils.version>
 		<lucene.version>6.4.2</lucene.version>
-		<ir-utils.version>0.2.0-SNAPSHOT</ir-utils.version>
 		<commons-cli.version>1.4</commons-cli.version>
 
+		<!-- For integration tests using ANT -->
+		<integ.http.port>9400</integ.http.port>
+		<integ.transport.port>9500</integ.transport.port>
+
+		<!-- Run with "-DskipTests=true" to skip running tests -->
 		<skipTests>false</skipTests>
 		<skipIntegTests>false</skipIntegTests>
 		<skipUnitTests>false</skipUnitTests>
@@ -61,6 +69,12 @@
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>${junit.version}</version>
+			<exclusions>
+				<exclusion>  <!-- declare the exclusion here -->
+					<groupId>org.hamcrest</groupId>
+					<artifactId>hamcrest-core</artifactId>
+				</exclusion>
+			</exclusions>
 			<scope>test</scope>
 		</dependency>
 
@@ -85,23 +99,13 @@
 			<scope>test</scope>
 		</dependency>
 
-		<dependency>
-			<groupId>org.elasticsearch.client</groupId>
-			<artifactId>transport</artifactId>
-			<version>${elasticsearch.version}</version>
-		</dependency>
+		<!-- <dependency> <groupId>org.elasticsearch.client</groupId> <artifactId>transport</artifactId> 
+			<version>${elasticsearch.version}</version> </dependency> -->
 
 		<dependency>
 			<groupId>org.apache.lucene</groupId>
 			<artifactId>lucene-test-framework</artifactId>
 			<version>${lucene.version}</version>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.elasticsearch.test</groupId>
-			<artifactId>framework</artifactId>
-			<version>${elasticsearch.version}</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -171,6 +175,20 @@
 			<groupId>edu.illinois.lis</groupId>
 			<artifactId>ir-utils</artifactId>
 			<version>${ir-utils.version}</version>
+			<exclusions>
+				<exclusion>  <!-- declare the exclusion here -->
+					<groupId>commons-collections</groupId>
+					<artifactId>commons-collections</artifactId>
+				</exclusion>
+				<exclusion>  <!-- declare the exclusion here -->
+					<groupId>org.apache.geronimo.specs</groupId>
+					<artifactId>geronimo-stax-api_1.0_spec</artifactId>
+				</exclusion>
+				<exclusion>  <!-- declare the exclusion here -->
+					<groupId>xml-apis</groupId>
+					<artifactId>xml-apis</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 	</dependencies>
 
@@ -235,7 +253,7 @@
 							<skip>${skipIntegTests}</skip>
 							<artifactItems>
 								<artifactItem>
-									<groupId>org.elasticsearch</groupId>
+									<groupId>${elasticsearch.groupid}</groupId>
 									<artifactId>elasticsearch</artifactId>
 									<version>${elasticsearch.version}</version>
 									<type>zip</type>
@@ -268,7 +286,6 @@
 							</target>
 						</configuration>
 					</execution>
-
 					<!-- shut down external cluster -->
 					<execution>
 						<id>integ-teardown</id>
@@ -295,6 +312,62 @@
 					<execution>
 						<id>default-test</id>
 						<phase>none</phase>
+					</execution>
+				</executions>
+			</plugin>
+
+
+
+			<!-- Randomized Testing Plugin -->
+			<plugin>
+				<groupId>com.carrotsearch.randomizedtesting</groupId>
+				<artifactId>junit4-maven-plugin</artifactId>
+				<version>2.3.3</version>
+
+				<configuration>
+					<assertions enableSystemAssertions="false">
+						<enable />
+					</assertions>
+
+					<listeners>
+						<report-text />
+					</listeners>
+				</configuration>
+
+				<executions>
+					<execution>
+						<id>unit-tests</id>
+						<phase>test</phase>
+						<goals>
+							<goal>junit4</goal>
+						</goals>
+						<inherited>true</inherited>
+						<configuration>
+							<skipTests>${skipUnitTests}</skipTests>
+							<includes>
+								<include>**/*Test.class</include>
+							</includes>
+							<excludes>
+								<exclude>**/*$*</exclude>
+							</excludes>
+						</configuration>
+					</execution>
+					<execution>
+						<id>integration-tests</id>
+						<phase>integration-test</phase>
+						<goals>
+							<goal>junit4</goal>
+						</goals>
+						<inherited>true</inherited>
+						<configuration>
+							<skipTests>${skipIntegTests}</skipTests>
+							<includes>
+								<include>**/*IT.class</include>
+							</includes>
+							<excludes>
+								<exclude>**/*$*</exclude>
+							</excludes>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>

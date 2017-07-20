@@ -12,6 +12,7 @@ import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.termvectors.MultiTermVectorsItemResponse;
 import org.elasticsearch.action.termvectors.MultiTermVectorsRequestBuilder;
 import org.elasticsearch.action.termvectors.MultiTermVectorsResponse;
 import org.elasticsearch.client.AdminClient;
@@ -35,7 +36,7 @@ import org.nationaldataservice.elasticsearch.rocchio.Rocchio;
 import edu.gslis.textrepresentation.FeatureVector;
 
 @RunWith(MockitoJUnitRunner.class)
-public class TestRocchio {
+public class RocchioTest {
 	// TODO: Insert real/mocked settings here?
 	//private Settings settings = Settings.builder().build();
 	
@@ -119,6 +120,9 @@ public class TestRocchio {
 		when(mockedFuture.actionGet()).thenReturn(mtvResponse);
 		
 		when(this.client.prepareMultiTermVectors()).thenReturn(multiTermVectorBuilder);
+		
+		//MultiTermVectorsItemResponse mtvItemResponse = mock(MultiTermVectorsItemResponse.class);
+		//when(mtvResponse.getResponses()).thenReturn(mtvItemResponse);
 	}
 	
 	private void mockSearchRequest() {
