@@ -1,5 +1,5 @@
 # elasticsearch-queryexpansion-plugin
-Work in Progress - A simple ElasticSearch plugin for exploration, which hopefully evolves into an implementation of QE in ElasticSearch
+A simple ElasticSearch plugin wrapping around the search endpoint to provide Rocchio query expansion
 
 # Prerequisites
 * Docker
@@ -49,7 +49,7 @@ NOTE: Indexing the full benchmark set can take a long time. If you only need a s
 ## Build
 A helper script has been included to ease building:
 ```bash
-./script/build.sh
+./scripts/build.sh
 ```
 
 This will attempt to build the source using Maven (or Docker, if Maven is not available).
