@@ -2,7 +2,6 @@ package org.nationaldataservice.elasticsearch.rocchio.test.integration;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.http.HttpHost;
@@ -17,8 +16,6 @@ import org.elasticsearch.common.xcontent.XContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.test.ESTestCase;
-import org.elasticsearch.test.rest.ESRestTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import static org.hamcrest.Matchers.*;

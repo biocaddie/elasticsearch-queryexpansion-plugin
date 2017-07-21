@@ -49,12 +49,12 @@ public class RocchioTest {
 	private static String TEST_QUERY = "multiple sclerosis";
 	private static String TEST_TYPE = "dataset";
 	private static String TEST_FIELD = "_all";
-	private static int TEST_FB_TERMS = 10;
-	private static int TEST_FB_DOCS = 50;
-	private double TEST_ALPHA = 0.5;
-	private double TEST_BETA = 0.5;
-	private double TEST_K1 = 1.2;
-	private double TEST_B = 0.75;
+	private static int    TEST_FB_TERMS = 10;
+	private static int    TEST_FB_DOCS = 50;
+	private static double TEST_ALPHA = 0.5;
+	private static double TEST_BETA = 0.5;
+	private static double TEST_K1 = 1.2;
+	private static double TEST_B = 0.75;
 	
 	private Rocchio rocchio;
 	
