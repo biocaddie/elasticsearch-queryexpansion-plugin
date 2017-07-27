@@ -3,7 +3,9 @@ package org.nationaldataservice.elasticsearch.rocchio.test.unit;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.SearchHit;
@@ -41,7 +43,7 @@ public class RocchioTest {
 	//private Settings settings = Settings.builder().build();
 	
 	// TODO: Mock these
-	private Client client;
+	private Client client = mock(Client.class);
 	
 	// Our common test parameter set (individual tests can still use one-off values)
 	private static String TEST_EXPAND_INDEX = "biocaddie";
@@ -60,30 +62,6 @@ public class RocchioTest {
 	
 	/* This one is sort of a ridiculous rabbit hole to mock out... */
 	private void mockIndexMetaDataRequest() throws IOException {
-		LinkedHashMap<String, Object> fieldPropertiesMap = new LinkedHashMap<String, Object>();
-		fieldPropertiesMap.put("store", true);
-		
-		LinkedHashMap<String, Object> typePropertiesMap = new LinkedHashMap<String, Object>();
-		typePropertiesMap.put(TEST_FIELD, fieldPropertiesMap);
-		
-		LinkedHashMap<String, Object> typeMap = new LinkedHashMap<String, Object>();
-		typeMap.put("properties", typePropertiesMap);
-		
-		MappingMetaData mockTypeMetadata = mock(MappingMetaData.class);
-		when(mockTypeMetadata.getSourceAsMap()).thenReturn(typeMap);
-
-		IndexMetaData mockIndexMetaData = mock(IndexMetaData.class);
-		//ImmutableOpenMap<String, MappingMetaData> mockIndexMappingMetadata = new ImmutableOpenMap<String, MappingMetaData>();
-		
-		// FIXME: We can't mock final classes...
-		//ImmutableOpenMap<String, MappingMetaData> mockIndexMappingMetadata = (ImmutableOpenMap<String, MappingMetaData>) mock(ImmutableOpenMap.class);
-		//when(mockIndexMetaData.getMappings()).thenReturn(mockIndexMappingMetadata);
-		//when(mockIndexMappingMetadata.get(anyString())).thenReturn(mockTypeMetadata);
-		
-		// Initialize our mocked ElasticSearch environment
-		/*when(this.client.admin().cluster().state(Requests.clusterStateRequest()).actionGet()
-				.getState().getMetaData().index(anyString())).thenReturn(mockIndexMetaData);*/
-		
 		AdminClient adminClient = mock(AdminClient.class);
 		when(client.admin()).thenReturn(adminClient);
 		
@@ -91,7 +69,7 @@ public class RocchioTest {
 		when(adminClient.cluster()).thenReturn(clusterAdminClient);
 		
 		ActionFuture<ClusterStateResponse> clusterStateFuture = (ActionFuture<ClusterStateResponse>) mock(ActionFuture.class);
-		when(clusterAdminClient.state(Requests.clusterStateRequest())).thenReturn(clusterStateFuture);
+		when(clusterAdminClient.state(any())).thenReturn(clusterStateFuture);
 		
 		ClusterStateResponse clusterStateResponse = mock(ClusterStateResponse.class);
 		when(clusterStateFuture.actionGet()).thenReturn(clusterStateResponse);
@@ -101,9 +79,29 @@ public class RocchioTest {
 		
 		MetaData clusterMetadata = mock(MetaData.class);
 		when(clusterState.getMetaData()).thenReturn(clusterMetadata);
-		
+
+		IndexMetaData mockIndexMetaData = mock(IndexMetaData.class);
 		when(clusterMetadata.index(anyString())).thenReturn(mockIndexMetaData);
+
+
+		MappingMetaData mockTypeMetadata = mock(MappingMetaData.class);
+		Map<String, MappingMetaData> hashMap = new HashMap<>();
+		hashMap.put(TEST_TYPE, mockTypeMetadata);
+		when(mockIndexMetaData.getMappings()).thenReturn(new ImmutableOpenMap.Builder<String, MappingMetaData>().putAll(hashMap).build());
 		
+		LinkedHashMap<String, Object> fieldPropertiesMap = new LinkedHashMap<String, Object>();
+		fieldPropertiesMap.put("store", true);
+		
+		LinkedHashMap<String, Object> typePropertiesMap = new LinkedHashMap<String, Object>();
+		typePropertiesMap.put(TEST_FIELD, fieldPropertiesMap);
+		
+		LinkedHashMap<String, Object> typeMap = new LinkedHashMap<String, Object>();
+		typeMap.put("properties", typePropertiesMap);
+		typeMap.put("_all", fieldPropertiesMap);
+		
+		when(mockTypeMetadata.getSourceAsMap()).thenReturn(typeMap);
+		// FIXME: We can't mock final classes...
+		//ImmutableOpenMap<String, MappingMetaData> mockIndexMappingMetadata = (ImmutableOpenMap<String, MappingMetaData>) mock(ImmutableOpenMap.class);
 		
 	}
 	
@@ -155,10 +153,8 @@ public class RocchioTest {
 	
 	@Before
 	public void setUp() throws IOException {
-		this.client = mock(TransportClient.class);
-		
 		// FIXME: Can't mock this due to final class
-		//mockIndexMetaDataRequest();
+		mockIndexMetaDataRequest();
 		mockTermVectorRequest();
 		mockSearchRequest();
 		
