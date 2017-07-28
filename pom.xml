@@ -2,14 +2,20 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.nationaldataservice.elasticsearch</groupId>
+  <groupId>edu.illinois.lis</groupId>
   <artifactId>rocchio</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>ElasticSearch Rocchio Plugin</name>
   <description>A custom plugin for ElasticSearch to enable Rocchio Query Expansion</description>
-  <url>http://maven.apache.org</url>
+  <url>https://github.com/nds-org/elasticsearch-queryexpansion-plugin</url>
+
+  <scm>
+    <url>git@github.com:nds-org/elasticsearch-queryexpansion-plugin.git</url>
+    <connection>scm:git:git:git@github.com:nds-org/elasticsearch-queryexpansion-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:nds-org/elasticsearch-queryexpansion-plugin.git</developerConnection>
+  </scm>
 
   <parent>
     <groupId>org.sonatype.oss</groupId>
@@ -98,9 +104,6 @@
       <version>${elasticsearch.client.version}</version>
       <scope>test</scope>
     </dependency>
-
-    <!-- <dependency> <groupId>org.elasticsearch.client</groupId> <artifactId>transport</artifactId> 
-      <version>${elasticsearch.version}</version> </dependency> -->
 
     <dependency>
       <groupId>org.apache.lucene</groupId>
@@ -237,6 +240,58 @@
         </executions>
       </plugin>
 
+      <!-- Maven Source Plugin -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>3.0.1</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Maven Javadoc Plugin -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.10.4</version>
+        <configuration>
+          <show>private</show>
+          <nohelp>true</nohelp>
+        </configuration>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Maven GPG Plugin -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>1.6</version>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
       <!-- Maven Dependency Plugin -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -253,7 +308,7 @@
               <skip>${skipIntegTests}</skip>
               <artifactItems>
                 <artifactItem>
-                  <groupId>${elasticsearch.groupid}</groupId>
+                  <groupId>org.elasticsearch.distribution.integ-test-zip</groupId>
                   <artifactId>elasticsearch</artifactId>
                   <version>${elasticsearch.version}</version>
                   <type>zip</type>
