@@ -64,26 +64,84 @@ public class Rocchio {
 	public static String INVALID_B_ERROR = "B value must be a real number between " + B_MIN + " and " + B_MAX;
 
 	// Error Strings returned from ensureTermVectors()
+	/**
+	 * Returns a "nonexistent index" error message for the given index
+	 * 
+	 * @param index
+	 * 			  the {@link String} index name
+	 * @return a "nonexistent index" error message
+	 */
 	public static String NONEXISTENT_INDEX_ERROR(String index) {
 		return "Index does not exist: " + index;
 	}
 
+	/**
+	 * Returns a "nonexistent type" error message for the given index/type
+	 * 
+	 * @param index
+	 * 			  the {@link String} index name
+	 * @param type
+	 * 			  the {@link String} type name
+	 * @return a "nonexistent type error" error message
+	 */
 	public static String NONEXISTENT_TYPE_ERROR(String index, String type) {
 		return "No mapping found on index " + index + " for: " + type;
 	}
 
+	/**
+	 * Returns a "disabled term vectors" error message for the given index/type/field
+	 * 
+	 * @param index
+	 * 			  the {@link String} index name
+	 * @param type
+	 * 			  the {@link String} type name
+	 * @param field
+	 * 			  the {@link String} field name
+	 * @return a "disabled term vectors" error message
+	 */
 	public static String DISABLED_TERM_VECTORS_ERROR(String index, String type, String field) {
 		return "Term vectors storage for on " + index + "." + type + "." + field + " has been disabled";
 	}
 
+	/**
+	 * Returns a "unconfigured term vectors" error message for the given index/type/field
+	 * 
+	 * @param index
+	 * 			  the {@link String} index name
+	 * @param type
+	 * 			  the {@link String} type name
+	 * @param field
+	 * 			  the {@link String} field name
+	 * @return an "unconfigured term vectors" error message
+	 */
 	public static String UNCONFIGURED_TERM_VECTORS_ERROR(String index, String type, String field) {
 		return "Term vectors storage for on index " + index + "." + type + "." + field + " has not been configured";
 	}
 
+	/**
+	 * Returns a "missing term vector field" error message for the given index/type
+	 * 
+	 * @param index
+	 * 			  the {@link String} index name
+	 * @param type
+	 * 			  the {@link String} type name
+	 * @return a "missing term vector field" error message
+	 */
 	public static String MISSING_TERM_VECTOR_FIELD(String index, String type) {
 		return "Error: no fields received for term vector - " + index + "/" + type;
 	}
 
+	/**
+	 * Returns a "missing field terms" error message for the given index/type/field
+	 * 
+	 * @param index
+	 * 			  the {@link String} index name
+	 * @param type
+	 * 			  the {@link String} type name
+	 * @param field
+	 * 			  the {@link String} field name
+	 * @return a "missing field terms" error message
+	 */
 	public static String MISSING_FIELD_TERMS(String index, String type, String field) {
 		return "Error: no terms received for field - " + index + "/" + type + "/" + field;
 	}
@@ -112,13 +170,23 @@ public class Rocchio {
 	 * client and parameters.
 	 * 
 	 * @param client
+	 *			  the {@link Client} to use for the connection
 	 * @param index
+	 *            the {@link String} index to expand against
 	 * @param type
+	 *            the {@link String} type within the index
 	 * @param field
+	 *            the {@link String} field on the type
 	 * @param alpha
+	 *            the {@link double} Rocchio alpha parameter
 	 * @param beta
+	 *            the {@link double} Rocchio beta parameter
 	 * @param k1
+	 *            the {@link double} Rocchio k1 parameter
 	 * @param b
+	 *            the {@link double} Rocchio b parameter
+	 * @param stoplist
+	 *            the {@link String} list of stop words
 	 */
 	public Rocchio(Client client, String index, String type, String field, double alpha, double beta, double k1,
 			double b, String stoplist) {
@@ -133,7 +201,28 @@ public class Rocchio {
 
 		this.setStoplist(stoplist);
 	}
-
+	
+	/**
+	 * Instantiates a new instance of the Rocchio algorithm with the given
+	 * client and parameters.
+	 * 
+	 * @param client
+	 *			  the {@link Client} to use for the connection
+	 * @param index
+	 *            the {@link String} index to expand against
+	 * @param type
+	 *            the {@link String} type within the index
+	 * @param field
+	 *            the {@link String} field on the type
+	 * @param alpha
+	 *            the {@link double} Rocchio alpha parameter
+	 * @param beta
+	 *            the {@link double} Rocchio beta parameter
+	 * @param k1
+	 *            the {@link double} Rocchio k1 parameter
+	 * @param b
+	 *            the {@link double} Rocchio b parameter
+	 */
 	public Rocchio(Client client, String index, String type, String field, double alpha, double beta, double k1,
 			double b) {
 		this(client, index, type, field, alpha, beta, k1, b, null);
@@ -169,26 +258,12 @@ public class Rocchio {
 	 * Verifies that String and numeric values are within their allowed ranges,
 	 * then ensures that term vectors are properly enabled on the target index.
 	 * 
-	 * @param index
-	 *            the String index to expand against
 	 * @param query
 	 *            the String query to expand
-	 * @param type
-	 *            the String type within the index
-	 * @param field
-	 *            the String field on the type
 	 * @param fbDocs
 	 *            the int number of feedback documents
 	 * @param fbTerms
 	 *            the int number of feedback terms
-	 * @param alpha
-	 *            the double Rocchio alpha parameter
-	 * @param beta
-	 *            the double Rocchio beta parameter
-	 * @param k1
-	 *            the double Rocchio k1 parameter
-	 * @param b
-	 *            the double Rocchio b parameter
 	 * @return the String error message, or null if no errors are encountered
 	 * @throws IOException
 	 *             if the indexMetaData fails to deserialize into a map
@@ -225,14 +300,6 @@ public class Rocchio {
 	 * TODO: Some of this could potentially be called at plugin startup, if we
 	 * know what index/type we plan to expand against ahead of time...
 	 * 
-	 * @param client
-	 *            the client to use for the connection
-	 * @param index
-	 *            the index to check for the desired type
-	 * @param type
-	 *            the type to check for the desired field
-	 * @param field
-	 *            the field for which to verify that term vectors are enabled
 	 * @return the String error message, or null if no errors are encountered
 	 * 
 	 * @throws IOException
@@ -310,6 +377,8 @@ public class Rocchio {
 	 * Run the query using the client (this assumes that the client has already
 	 * been initialized and is ready to execute)
 	 * 
+	 * @param index
+	 *            the String index to expand against
 	 * @param query
 	 *            Query string
 	 * @param numDocs
@@ -330,6 +399,8 @@ public class Rocchio {
 	 *            Number of feedback documents
 	 * @return FeatureVector based on feedback documents
 	 * @throws IOException
+	 * 			  if the TermVector has no fields, or
+	 * 			  if its Fields contain no terms
 	 */
 	private FeatureVector getFeedbackVector(SearchHits hits, int fbDocs) throws IOException {
 		FeatureVector summedDocVec = new FeatureVector(this.stopper);
@@ -436,6 +507,7 @@ public class Rocchio {
 	 *            Number of feedback terms
 	 * @return Expanded feature vector
 	 * @throws IOException
+	 * 			  if we fail to get the feedback vector
 	 */
 	public FeatureVector expandQuery(String query, int fbDocs, int fbTerms) throws IOException {
 		// Run the initial query
@@ -464,7 +536,9 @@ public class Rocchio {
 	 * Compute BM25 weights for the input vector and add to the output vector
 	 * 
 	 * @param inputVector
+	 * 				the {@link FeatureVector} input
 	 * @param outputVector
+	 * 				the {@link FeatureVector} output
 	 */
 	private void computeBM25Weights(FeatureVector inputVector, FeatureVector outputVector) {
 		for (String term : inputVector.getFeatures()) {
@@ -479,9 +553,9 @@ public class Rocchio {
 	}
 
 	/**
-	 * Command line options
+	 * Debug: Command line options for the main() method (see below)
 	 * 
-	 * @return
+	 * @return the CLI options
 	 */
 	public static Options createOptions() {
 		Options options = new Options();
@@ -518,8 +592,7 @@ public class Rocchio {
 	 * @param args
 	 *            the command-line arguments
 	 * @throws IOException
-	 *             if expandQuery throws an IOException
-	 * @throws UnknownHostException
+	 *             if expandQuery throws an IOException, or
 	 *             if the host lookup fails (localhost shouldn't)
 	 * @throws ParseException
 	 *             if the command-line arguments cannot be parsed

@@ -55,6 +55,7 @@
     <!-- For integration tests using ANT -->
     <integ.http.port>9400</integ.http.port>
     <integ.transport.port>9500</integ.transport.port>
+    <tests.rest.cluster>localhost:${integ.http.port}</tests.rest.cluster>
 
     <!-- Run with "-DskipTests=true" to skip running tests -->
     <skipTests>false</skipTests>
