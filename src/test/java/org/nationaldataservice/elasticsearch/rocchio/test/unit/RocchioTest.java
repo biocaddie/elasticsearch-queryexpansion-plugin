@@ -3,12 +3,17 @@ package org.nationaldataservice.elasticsearch.rocchio.test.unit;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.SearchHit;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.BytesRef;
 import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
@@ -17,6 +22,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.termvectors.MultiTermVectorsItemResponse;
 import org.elasticsearch.action.termvectors.MultiTermVectorsRequestBuilder;
 import org.elasticsearch.action.termvectors.MultiTermVectorsResponse;
+import org.elasticsearch.action.termvectors.TermVectorsResponse;
 import org.elasticsearch.client.AdminClient;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.ClusterAdminClient;
@@ -105,7 +111,7 @@ public class RocchioTest {
 		
 	}
 	
-	private void mockTermVectorRequest() {
+	private void mockTermVectorRequest() throws IOException {
 		MultiTermVectorsRequestBuilder multiTermVectorBuilder = mock(MultiTermVectorsRequestBuilder.class);
 		when(multiTermVectorBuilder.add(any())).thenReturn(multiTermVectorBuilder);
 		
@@ -118,9 +124,30 @@ public class RocchioTest {
 		when(mockedFuture.actionGet()).thenReturn(mtvResponse);
 		
 		when(this.client.prepareMultiTermVectors()).thenReturn(multiTermVectorBuilder);
+
+		TermVectorsResponse mockTvResponse = mock(TermVectorsResponse.class);
+		MultiTermVectorsItemResponse mockMtvItemResponse = mock(MultiTermVectorsItemResponse.class);
+		when(mockMtvItemResponse.getResponse()).thenReturn(mockTvResponse);
 		
-		//MultiTermVectorsItemResponse mtvItemResponse = mock(MultiTermVectorsItemResponse.class);
-		//when(mtvResponse.getResponses()).thenReturn(mtvItemResponse);
+		MultiTermVectorsItemResponse[] mockMtvItemResponses = { mockMtvItemResponse };
+		when(mtvResponse.getResponses()).thenReturn(mockMtvItemResponses);
+		
+		Fields mockFields = mock(Fields.class);
+		when(mockTvResponse.getFields()).thenReturn(mockFields);
+		Terms mockTerms = mock(Terms.class);
+		when(mockFields.terms(TEST_FIELD)).thenReturn(mockTerms);
+		when(mockTerms.getDocCount()).thenReturn(10);
+		when(mockTerms.getSumTotalTermFreq()).thenReturn(10L);
+		
+		TermsEnum mockIterator = mock(TermsEnum.class);
+		when(mockTerms.iterator()).thenReturn(mockIterator);
+
+		when(mockIterator.next()).thenReturn(null);
+		when(mockIterator.totalTermFreq()).thenReturn(10L);
+		when(mockIterator.docFreq()).thenReturn(10);
+		
+		BytesRef ref = new BytesRef("asdf");
+		when(mockIterator.term()).thenReturn(ref);
 	}
 	
 	private void mockSearchRequest() {
