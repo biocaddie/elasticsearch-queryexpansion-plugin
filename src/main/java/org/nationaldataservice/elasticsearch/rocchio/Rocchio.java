@@ -316,7 +316,7 @@ public class Rocchio {
 	 *            Number of results to return
 	 * @return SearchHits object
 	 */
-	public SearchResponse runQuery(String index, String query, int numDocs) {
+	private SearchResponse runQuery(String index, String query, int numDocs) {
 		QueryStringQueryBuilder queryStringQueryBuilder = new QueryStringQueryBuilder(query);
 		return client.prepareSearch(index).setQuery(queryStringQueryBuilder).setSize(numDocs).execute().actionGet();
 	}
@@ -470,8 +470,7 @@ public class Rocchio {
 		for (String term : inputVector.getFeatures()) {
 			long docOccur = dfStats.get(term);
 
-			double idf = Math.log((docCount + 1) / (docOccur + 0.5)); // following
-																		// Indri
+			double idf = Math.log((docCount + 1) / (docOccur + 0.5)); // following Indri
 			double tf = inputVector.getFeatureWeight(term);
 
 			double weight = (idf * k1 * tf) / (tf + k1 * (1 - b + b * inputVector.getLength() / avgDocLen));
