@@ -17,7 +17,7 @@ public class RocchioException extends Exception {
 	/**
 	 * An {@link Exception} encountered during {@link Rocchio} operations
 	 * 
-	 * @param message {@link String} the error message
+	 * @param message the {@link String} error message
 	 */
 	public RocchioException(String message) {
 		super(message);
@@ -26,7 +26,7 @@ public class RocchioException extends Exception {
 	/**
 	 * An exception encountered during {@link Rocchio} operations
 	 * 
-	 * @param cause the {@link Throwable} cause
+	 * @param cause the {@link Throwable} underlying cause
 	 */
 	public RocchioException(Throwable cause) {
 		super(cause);
@@ -35,7 +35,7 @@ public class RocchioException extends Exception {
 	/**
 	 * An exception encountered during {@link Rocchio} operations
 	 * 
-	 * @param message {@link String} the error message
+	 * @param message the {@link String} error message
 	 * @param cause the {@link Throwable} underlying cause
 	 */
 	public RocchioException(String message, Throwable cause) {
@@ -45,7 +45,7 @@ public class RocchioException extends Exception {
 	/**
 	 * An exception encountered during {@link Rocchio} operations
 	 *
-	 * @param message {@link String} the error message
+	 * @param message the {@link String} error message
 	 * @param cause the {@link Throwable} underlying cause
 	 * @param enableSuppression a {@link boolean} indicating whether suppression is enabled
 	 * @param writableStackTrace a {@link boolean} indicating whether the stackTrace is writeable

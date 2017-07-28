@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.Terms;
@@ -47,7 +48,7 @@ public class Rocchio {
 	private static int K1_MAX = 2;
 	private static int B_MIN = 0;
 	private static int B_MAX = 1;
-	
+
 	// Error Strings returned from validate()
 	public static String NULL_INDEX_ERROR = "You must specify an index to expand against";
 	public static String NULL_QUERY_ERROR = "You must specify a query to expand";
@@ -55,36 +56,38 @@ public class Rocchio {
 	public static String NULL_FIELD_ERROR = "You must specify a field";
 	public static String INVALID_FB_TERMS_ERROR = "Number of feedback terms (fbTerms) must be a positive integer";
 	public static String INVALID_FB_DOCS_ERROR = "Number of feedback documents (fbDocs) must be a positive integer";
-	public static String INVALID_ALPHA_ERROR = "Alpha value must be a real number between " + ALPHA_BETA_MIN + " and " + ALPHA_BETA_MAX;
-	public static String INVALID_BETA_ERROR = "Beta value must be a real number between " + ALPHA_BETA_MIN + " and " + ALPHA_BETA_MAX;
+	public static String INVALID_ALPHA_ERROR = "Alpha value must be a real number between " + ALPHA_BETA_MIN + " and "
+			+ ALPHA_BETA_MAX;
+	public static String INVALID_BETA_ERROR = "Beta value must be a real number between " + ALPHA_BETA_MIN + " and "
+			+ ALPHA_BETA_MAX;
 	public static String INVALID_K1_ERROR = "K1 value must be a real number between " + K1_MIN + " and " + K1_MAX;
 	public static String INVALID_B_ERROR = "B value must be a real number between " + B_MIN + " and " + B_MAX;
-	
+
 	// Error Strings returned from ensureTermVectors()
 	public static String NONEXISTENT_INDEX_ERROR(String index) {
 		return "Index does not exist: " + index;
 	}
-	
+
 	public static String NONEXISTENT_TYPE_ERROR(String index, String type) {
 		return "No mapping found on index " + index + " for: " + type;
 	}
-	
+
 	public static String DISABLED_TERM_VECTORS_ERROR(String index, String type, String field) {
 		return "Term vectors storage for on " + index + "." + type + "." + field + " has been disabled";
 	}
-	
+
 	public static String UNCONFIGURED_TERM_VECTORS_ERROR(String index, String type, String field) {
 		return "Term vectors storage for on index " + index + "." + type + "." + field + " has not been configured";
 	}
-	
+
 	public static String MISSING_TERM_VECTOR_FIELD(String index, String type) {
 		return "Error: no fields received for term vector - " + index + "/" + type;
 	}
-	
+
 	public static String MISSING_FIELD_TERMS(String index, String type, String field) {
 		return "Error: no terms received for field - " + index + "/" + type + "/" + field;
 	}
-	
+
 	private Client client; // ElasticSearch client
 	private String index; // ElasticSearch index name
 	private String type; // Document type
@@ -94,7 +97,7 @@ public class Rocchio {
 	private double beta; // Rocchio beta
 	private double k1; // BM25 k1
 	private double b; // BM25 b
-	
+
 	private Stopper stopper = null;
 
 	// Global statistics (there's certainly a better way to handle this)
@@ -127,7 +130,7 @@ public class Rocchio {
 		this.beta = beta;
 		this.k1 = k1;
 		this.b = b;
-		
+
 		this.setStoplist(stoplist);
 	}
 
@@ -135,14 +138,14 @@ public class Rocchio {
 			double b) {
 		this(client, index, type, field, alpha, beta, k1, b, null);
 	}
-	
+
 	// Assumes a space-delimited string
 	private void setStoplist(String stoplist) {
 		if (Strings.isNullOrEmpty(stoplist)) {
 			this.stopper = null;
 			return;
 		}
-		
+
 		this.stopper = new Stopper();
 		String[] stopwords = stoplist.split(" ");
 		for (String term : stopwords) {
@@ -161,13 +164,11 @@ public class Rocchio {
 			fail(errorMessage);
 		}
 	}
-	
-
 
 	/**
 	 * Verifies that String and numeric values are within their allowed ranges,
-	 *     then ensures that term vectors are properly enabled on the target index.
-	 *     
+	 * then ensures that term vectors are properly enabled on the target index.
+	 * 
 	 * @param index
 	 *            the String index to expand against
 	 * @param query
@@ -189,7 +190,8 @@ public class Rocchio {
 	 * @param b
 	 *            the double Rocchio b parameter
 	 * @return the String error message, or null if no errors are encountered
-	 * @throws IOException if the indexMetaData fails to deserialize into a map
+	 * @throws IOException
+	 *             if the indexMetaData fails to deserialize into a map
 	 */
 	public String validate(String query, int fbDocs, int fbTerms) throws IOException {
 		if (Strings.isNullOrEmpty(query)) {
@@ -289,10 +291,12 @@ public class Rocchio {
 
 			return null;
 		}
-		
+
 		// TODO: NDS-958 - Check that type has documents added to it?
-		// TODO: NDS-958 - Check that the documents in the type contain the desired field?
-		// TODO: NDS-958 - Check that term vectors/fields stats are available for the
+		// TODO: NDS-958 - Check that the documents in the type contain the
+		// desired field?
+		// TODO: NDS-958 - Check that term vectors/fields stats are available
+		// for the
 		// desired index/type/field combination?
 
 		// If neither of the above triggered, then we didn't have the right term
@@ -314,9 +318,7 @@ public class Rocchio {
 	 */
 	public SearchResponse runQuery(String index, String query, int numDocs) {
 		QueryStringQueryBuilder queryStringQueryBuilder = new QueryStringQueryBuilder(query);
-		return client.prepareSearch(index).setQuery(queryStringQueryBuilder)
-										  .setSize(numDocs)
-										  .execute().actionGet();
+		return client.prepareSearch(index).setQuery(queryStringQueryBuilder).setSize(numDocs).execute().actionGet();
 	}
 
 	/**
@@ -500,7 +502,19 @@ public class Rocchio {
 	}
 
 	/**
-	 * Debug: this will run Rocchio as a standalone command-line application.
+	 * Debug: this main method will run Rocchio as a standalone command-line
+	 * application.
+	 * 
+	 * NOTE: You will need to add the following dependency to your
+	 * {@code pom.xml}:
+	 * 
+	 * <pre>
+	 *  &lt;dependency&gt;
+	 *    &lt;groupId&gt;org.elasticsearch.client&lt;/groupId&gt;
+	 *    &lt;artifactId&gt;transport&lt;/artifactId&gt;
+	 *    &lt;version&gt;${elasticsearch.version}&lt;/version&gt;
+	 *  &lt;/dependency&gt;
+	 * </pre>
 	 * 
 	 * @param args
 	 *            the command-line arguments
@@ -511,54 +525,55 @@ public class Rocchio {
 	 * @throws ParseException
 	 *             if the command-line arguments cannot be parsed
 	 */
-	/*public static void main(String[] args) throws IOException, ParseException {
+	public static void main(String[] args) throws IOException, ParseException {
 
-		Options options = createOptions();
-		CommandLineParser parser = new GnuParser();
-		CommandLine cl = parser.parse(options, args);
-		if (cl.hasOption("help")) {
-			HelpFormatter formatter = new HelpFormatter();
-			formatter.printHelp(Rocchio.class.getCanonicalName(), options);
-			return;
-		}
-
-		// Get the many command line parameters
-		String cluster = cl.getOptionValue("cluster", "elasticsearch");
-		String host = cl.getOptionValue("host", "localhost");
-		int port = Integer.parseInt(cl.getOptionValue("port", "9300"));
-		double alpha = Double.parseDouble(cl.getOptionValue("alpha", "0.5"));
-		double beta = Double.parseDouble(cl.getOptionValue("beta", "0.5"));
-		double k1 = Double.parseDouble(cl.getOptionValue("k1", "1.2"));
-		double b = Double.parseDouble(cl.getOptionValue("b", "0.75"));
-		int fbTerms = Integer.parseInt(cl.getOptionValue("fbTerms", "10"));
-		int fbDocs = Integer.parseInt(cl.getOptionValue("fbDocs", "10"));
-		String index = cl.getOptionValue("index", "biocaddie");
-		String type = cl.getOptionValue("type", "dataset");
-		String field = cl.getOptionValue("field", "_all");
-
-		String auth = cl.getOptionValue("auth", "elastic:biocaddie");
-		String query = cl.getOptionValue("query", "multiple sclerosis");
-
-		// Connect to ElasticSearch
-		Settings settings = Settings.builder().put("cluster.name", cluster).build();
-		TransportClient transportClient = new PreBuiltTransportClient(settings);
-		transportClient.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(host), port));
-		Client client = transportClient.filterWithHeader(Collections.singletonMap("Authorization", auth));
-
-		// Construct Rocchio
-		Rocchio rocchio = new Rocchio(client, index, type, field, alpha, beta, k1, b);
-
-		// Expand the query
-		FeatureVector feedbackQuery = rocchio.expandQuery(query, fbDocs, fbTerms);
-
-		// Dump the expanded query
-		StringBuffer esQuery = new StringBuffer();
-		for (String term : feedbackQuery.getFeatures()) {
-			esQuery.append(term + "^" + feedbackQuery.getFeatureWeight(term) + " ");
-		}
-		System.out.println(esQuery);
-
-		transportClient.close();
-
-	}*/
+		/*
+		 * Options options = createOptions(); CommandLineParser parser = new
+		 * GnuParser(); CommandLine cl = parser.parse(options, args); if
+		 * (cl.hasOption("help")) { HelpFormatter formatter = new
+		 * HelpFormatter();
+		 * formatter.printHelp(Rocchio.class.getCanonicalName(), options);
+		 * return; }
+		 * 
+		 * // Get the many command line parameters String cluster =
+		 * cl.getOptionValue("cluster", "elasticsearch"); String host =
+		 * cl.getOptionValue("host", "localhost"); int port =
+		 * Integer.parseInt(cl.getOptionValue("port", "9300")); double alpha =
+		 * Double.parseDouble(cl.getOptionValue("alpha", "0.5")); double beta =
+		 * Double.parseDouble(cl.getOptionValue("beta", "0.5")); double k1 =
+		 * Double.parseDouble(cl.getOptionValue("k1", "1.2")); double b =
+		 * Double.parseDouble(cl.getOptionValue("b", "0.75")); int fbTerms =
+		 * Integer.parseInt(cl.getOptionValue("fbTerms", "10")); int fbDocs =
+		 * Integer.parseInt(cl.getOptionValue("fbDocs", "10")); String index =
+		 * cl.getOptionValue("index", "biocaddie"); String type =
+		 * cl.getOptionValue("type", "dataset"); String field =
+		 * cl.getOptionValue("field", "_all");
+		 * 
+		 * String auth = cl.getOptionValue("auth", "elastic:biocaddie"); String
+		 * query = cl.getOptionValue("query", "multiple sclerosis");
+		 * 
+		 * // Connect to ElasticSearch Settings settings =
+		 * Settings.builder().put("cluster.name", cluster).build();
+		 * TransportClient transportClient = new
+		 * PreBuiltTransportClient(settings);
+		 * transportClient.addTransportAddress(new
+		 * InetSocketTransportAddress(InetAddress.getByName(host), port));
+		 * Client client =
+		 * transportClient.filterWithHeader(Collections.singletonMap(
+		 * "Authorization", auth));
+		 * 
+		 * // Construct Rocchio Rocchio rocchio = new Rocchio(client, index,
+		 * type, field, alpha, beta, k1, b);
+		 * 
+		 * // Expand the query FeatureVector feedbackQuery =
+		 * rocchio.expandQuery(query, fbDocs, fbTerms);
+		 * 
+		 * // Dump the expanded query StringBuffer esQuery = new StringBuffer();
+		 * for (String term : feedbackQuery.getFeatures()) { esQuery.append(term
+		 * + "^" + feedbackQuery.getFeatureWeight(term) + " "); }
+		 * System.out.println(esQuery);
+		 * 
+		 * transportClient.close();
+		 */
+	}
 }

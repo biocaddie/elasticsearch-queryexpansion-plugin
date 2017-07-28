@@ -49,7 +49,7 @@ public class RocchioTest {
 	// values)
 	private static final String TEST_EXPAND_INDEX = "biocaddie";
 	private static final String TEST_SEARCH_INDEX = "biocaddie";
-	private static final String TEST_QUERY = "multiple sclerosis";
+	private static final String TEST_QUERY = "rat";
 	private static final String TEST_TYPE = "dataset";
 	private static final String TEST_FIELD = "_all";
 	private static final int TEST_FB_TERMS = 10;
@@ -107,8 +107,9 @@ public class RocchioTest {
 	private static final Map<String, MappingMetaData> typeMetadataMapping = new HashMap<>();
 
 	// FIXME: finish mocking out iterator and expand
-	private static final BytesRef ref = new BytesRef("asdf");
+	private static final BytesRef termRef = new BytesRef("rat");
 
+	/** Static initializer: set up all required test data and mocks */
 	static {
 		// Build up our properties mapping: { "store": true } object
 		fieldPropertiesMap.put("store", true);
@@ -155,10 +156,10 @@ public class RocchioTest {
 			when(mockTerms.iterator()).thenReturn(mockIterator);
 
 			// FIXME: finish mocking out iterator and expand
-			when(mockIterator.next()).thenReturn(null);
+			when(mockIterator.next()).thenReturn(termRef).thenReturn(null);
 			when(mockIterator.totalTermFreq()).thenReturn(10L);
 			when(mockIterator.docFreq()).thenReturn(10);
-			when(mockIterator.term()).thenReturn(ref);
+			when(mockIterator.term()).thenReturn(termRef);
 
 			// Mock building our SearchRequest
 			when(client.prepareSearch(anyString())).thenReturn(srBuilder);
@@ -184,18 +185,21 @@ public class RocchioTest {
 	};
 
 	@Before
+	/** Set up our test Rocchio implementation */
 	public void setUp() throws IOException {
 		// Initialize our Rocchio implementation (not mocked)
-		this.rocchio = new Rocchio(client, TEST_EXPAND_INDEX, TEST_TYPE, TEST_FIELD, TEST_ALPHA, TEST_BETA, TEST_K1, TEST_B);
+		this.rocchio = new Rocchio(client, TEST_EXPAND_INDEX, TEST_TYPE, TEST_FIELD, TEST_ALPHA, TEST_BETA, TEST_K1,
+				TEST_B);
 	}
 
 	@After
+	/** Tear down our test Rocchio implementation */
 	public void tearDown() {
 		this.rocchio = null;
 	}
 
 	@Test
-	// Test that validate returns null if all parameters are valid
+	/** Test that validate properly returns null if all parameters are valid */
 	public void testValidate() throws IOException {
 		// Validate example input parameters (should be valid)
 		String shouldBeNull = rocchio.validate(TEST_QUERY, TEST_FB_DOCS, TEST_FB_TERMS);
@@ -203,7 +207,7 @@ public class RocchioTest {
 	}
 
 	@Test
-	// Test that validate fails when query is null
+	/** Test that validate fails when query is null */
 	public void testValidateInvalidQuery() throws IOException {
 		// Validate example input parameters (should be valid)
 		String errorMessage = rocchio.validate("", TEST_FB_DOCS, TEST_FB_TERMS);
@@ -212,7 +216,7 @@ public class RocchioTest {
 	}
 
 	@Test
-	// Test that validate fails when fbDocs < 1
+	/** Test that validate fails when fbDocs < 1 */
 	public void testValidateInvalidFeedbackDocuments() throws IOException {
 		// Validate example input parameters (should be valid)
 		String errorMessage = rocchio.validate(TEST_QUERY, 0, TEST_FB_TERMS);
@@ -221,7 +225,7 @@ public class RocchioTest {
 	}
 
 	@Test
-	// Test that validate fails when fbTerms < 1
+	/** Test that validate fails when fbTerms < 1 */
 	public void testValidateInvalidFeedbackTerms() throws IOException {
 		// Validate example input parameters (should be valid)
 		String errorMessage = rocchio.validate(TEST_QUERY, TEST_FB_DOCS, 0);
@@ -230,27 +234,24 @@ public class RocchioTest {
 	}
 
 	@Test
-	// Test that we have correctly mocked runQuery
-	public void testRunQuery() {
-		SearchHits hits = rocchio.runQuery(TEST_SEARCH_INDEX, TEST_QUERY, TEST_FB_DOCS).getHits();
-		assertEquals(3, hits.getTotalHits());
-	}
-
-	@Test
-	// Test that we can expand a query against the test index
+	/** Test that we can expand a query against the test index */
 	public void testExpandQuery() throws IOException {
 		// Expand the query
 		FeatureVector feedbackQuery = rocchio.expandQuery(TEST_QUERY, TEST_FB_DOCS, TEST_FB_TERMS);
 
 		// Format our expanded query with Lucene's boosting syntax
-		/*StringBuffer expandedQuery = new StringBuffer();
-		String separator = ""; // start out with no separator
-		for (String term : feedbackQuery.getFeatures()) {
-			expandedQuery.append(separator + term + "^" + feedbackQuery.getFeatureWeight(term));
-			separator = " "; // add separator after first iteration
-		}*/
+		/*
+		 * StringBuffer expandedQuery = new StringBuffer(); String separator =
+		 * ""; // start out with no separator for (String term :
+		 * feedbackQuery.getFeatures()) { expandedQuery.append(separator + term
+		 * + "^" + feedbackQuery.getFeatureWeight(term)); separator = " "; //
+		 * add separator after first iteration }
+		 */
 
-		// FIXME: Regex?
-		assertEquals("multiple^", feedbackQuery.toString());
+		String[] segments = feedbackQuery.toString().trim().split(" ");
+		
+		assertEquals(2, segments.length);
+		assertEquals("0.012976521", segments[0]);
+		assertEquals("rat", segments[1]);
 	}
 }

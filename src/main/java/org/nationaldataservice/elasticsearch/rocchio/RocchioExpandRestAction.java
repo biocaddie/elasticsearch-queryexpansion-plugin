@@ -11,6 +11,7 @@ import org.elasticsearch.rest.BaseRestHandler;
 import org.elasticsearch.rest.BytesRestResponse;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
+import org.elasticsearch.rest.RestRequest.Method;
 import org.elasticsearch.rest.RestStatus;
 
 import edu.gslis.textrepresentation.FeatureVector;
@@ -23,14 +24,30 @@ public class RocchioExpandRestAction extends BaseRestHandler {
 		super(settings);
 
 		// Register your handlers here
-		controller.registerHandler(RestRequest.Method.GET, "/{index}/{type}/_expand", this);
-		controller.registerHandler(RestRequest.Method.GET, "/{index}/_expand", this);
+		controller.registerHandler(Method.GET, "/{index}/{type}/_expand", this);
+		controller.registerHandler(Method.GET, "/{index}/_expand", this);
 	}
 
+	/**
+	 * Helper method for throwing an error
+	 * 
+	 * @param error
+	 *            the String error message
+	 * @return a RestChannelConsumer to build up the error
+	 */
 	protected RestChannelConsumer throwError(String error) {
 		return throwError(error, RestStatus.BAD_REQUEST);
 	}
 
+	/**
+	 * Helper method for throwing an error
+	 * 
+	 * @param error
+	 *            the String error message
+	 * @param status
+	 *            the HTTP status to return
+	 * @return a RestChannelConsumer to build up the error
+	 */
 	protected RestChannelConsumer throwError(String error, RestStatus status) {
 		this.logger.error("ERROR: " + error);
 		return channel -> {
@@ -61,22 +78,18 @@ public class RocchioExpandRestAction extends BaseRestHandler {
 		double b = Double.parseDouble(request.param("b", "0.75"));
 		int fbDocs = Integer.parseInt(request.param("fbDocs", "10"));
 		int fbTerms = Integer.parseInt(request.param("fbTerms", "10"));
-		
+
 		// Optional stoplist (defaults to null)
 		String stoplist = request.param("stoplist", null);
 
 		// Log the request with our full parameter set
-		this.logger.info(String.format("Starting RocchioExpand (index=%s, query=%s, type=%s, "
-				+ "field=%s, fbDocs=%d, fbTerms=%d, α=%.2f, β=%.2f, k1=%.2f, b=%.2f, stoplist=%s)", 
+		this.logger.info(String.format(
+				"Starting RocchioExpand (index=%s, query=%s, type=%s, "
+						+ "field=%s, fbDocs=%d, fbTerms=%d, α=%.2f, β=%.2f, k1=%.2f, b=%.2f, stoplist=%s)",
 				index, query, type, field, fbDocs, fbTerms, alpha, beta, k1, b, stoplist));
-
 
 		// TODO: Check that type has documents added to it?
 		// TODO: Check that the documents in the type contain the desired field?
-
-		// Examine the index to verify that store == true for the desired
-		// index/type/field combination]
-
 		// TODO: Check that term vectors/fields stats are available for the
 		// desired index/type/field combination?
 
@@ -88,7 +101,7 @@ public class RocchioExpandRestAction extends BaseRestHandler {
 			if (!Strings.isNullOrEmpty(shortCircuit)) {
 				return throwError(shortCircuit);
 			}
-			
+
 			// Expand the query
 			this.logger.debug("Generating feedback query for (" + query + "," + fbDocs + "," + fbTerms);
 			FeatureVector feedbackQuery = rocchio.expandQuery(query, fbDocs, fbTerms);
