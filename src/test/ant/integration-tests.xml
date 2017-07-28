@@ -81,7 +81,7 @@
         <attribute name="timeoutproperty"/>
         <sequential>
             <echo>Waiting for elasticsearch to become available on port @{port}...</echo>
-            <waitfor maxwait="30" maxwaitunit="second"
+            <waitfor maxwait="60" maxwaitunit="second"
                      checkevery="500" checkeveryunit="millisecond"
                      timeoutproperty="@{timeoutproperty}">
                 <http url="http://localhost:@{port}"/>

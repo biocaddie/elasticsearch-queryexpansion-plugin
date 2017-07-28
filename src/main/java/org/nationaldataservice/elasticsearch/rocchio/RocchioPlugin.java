@@ -16,14 +16,11 @@ import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestHandler;
 
-public class QueryExpansionPlugin extends Plugin implements ActionPlugin {
+public class RocchioPlugin extends Plugin implements ActionPlugin {
 	@Override
 	public List<RestHandler> getRestHandlers(Settings settings, RestController restController,
 			ClusterSettings clusterSettings, IndexScopedSettings indexScopedSettings, SettingsFilter settingsFilter,
 			IndexNameExpressionResolver indexNameExpressionResolver, Supplier<DiscoveryNodes> nodesInCluster) {
-		return Arrays.asList(
-				new RocchioExpandRestAction(settings, restController),   // Roccio query expansion
-				new RocchioSearchRestAction(settings, restController)    // Query expansion + search
-			);
+		return Arrays.asList(new RocchioExpandRestAction(settings, restController));
 	}
 }
