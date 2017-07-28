@@ -47,8 +47,7 @@ public class RocchioTest {
 
 	// The common test parameter set (individual tests can still use one-off
 	// values)
-	private static final String TEST_EXPAND_INDEX = "biocaddie";
-	private static final String TEST_SEARCH_INDEX = "biocaddie";
+	private static final String TEST_INDEX = "biocaddie";
 	private static final String TEST_QUERY = "rat";
 	private static final String TEST_TYPE = "dataset";
 	private static final String TEST_FIELD = "_all";
@@ -188,7 +187,7 @@ public class RocchioTest {
 	/** Set up our test Rocchio implementation */
 	public void setUp() throws IOException {
 		// Initialize our Rocchio implementation (not mocked)
-		this.rocchio = new Rocchio(client, TEST_EXPAND_INDEX, TEST_TYPE, TEST_FIELD, TEST_ALPHA, TEST_BETA, TEST_K1,
+		this.rocchio = new Rocchio(client, TEST_INDEX, TEST_TYPE, TEST_FIELD, TEST_ALPHA, TEST_BETA, TEST_K1,
 				TEST_B);
 	}
 
