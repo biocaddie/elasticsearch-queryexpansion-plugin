@@ -3,7 +3,6 @@ package org.nationaldataservice.elasticsearch.rocchio.test.unit;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -26,8 +25,6 @@ import org.elasticsearch.action.termvectors.TermVectorsResponse;
 import org.elasticsearch.client.AdminClient;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.ClusterAdminClient;
-import org.elasticsearch.client.Requests;
-import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
@@ -48,36 +45,22 @@ public class RocchioTest {
 	/** The Rocchio instance to test */
 	private Rocchio rocchio;
 
-	// Mock out all of the ElasticSearch internals
-	private static final Client client = mock(Client.class);
-
 	// The common test parameter set (individual tests can still use one-off
 	// values)
-	private static String TEST_EXPAND_INDEX = "biocaddie";
-	private static String TEST_SEARCH_INDEX = "biocaddie";
-	private static String TEST_QUERY = "multiple sclerosis";
-	private static String TEST_TYPE = "dataset";
-	private static String TEST_FIELD = "_all";
-	private static int TEST_FB_TERMS = 10;
-	private static int TEST_FB_DOCS = 50;
-	private static double TEST_ALPHA = 0.5;
-	private static double TEST_BETA = 0.5;
-	private static double TEST_K1 = 1.2;
-	private static double TEST_B = 0.75;
+	private static final String TEST_EXPAND_INDEX = "biocaddie";
+	private static final String TEST_SEARCH_INDEX = "biocaddie";
+	private static final String TEST_QUERY = "multiple sclerosis";
+	private static final String TEST_TYPE = "dataset";
+	private static final String TEST_FIELD = "_all";
+	private static final int TEST_FB_TERMS = 10;
+	private static final int TEST_FB_DOCS = 50;
+	private static final double TEST_ALPHA = 0.5;
+	private static final double TEST_BETA = 0.5;
+	private static final double TEST_K1 = 1.2;
+	private static final double TEST_B = 0.75;
 
-	// The index mapping metadata and sub-mappings
-	private static MappingMetaData mockTypeMetadata = mock(MappingMetaData.class);
-	private static final ImmutableOpenMap<String, MappingMetaData> indexMappingMetadata;
-	private static final LinkedHashMap<String, Object> fieldPropertiesMap = new LinkedHashMap<String, Object>();
-	private static final LinkedHashMap<String, Object> typePropertiesMap = new LinkedHashMap<String, Object>();
-	private static final LinkedHashMap<String, Object> typeMap = new LinkedHashMap<String, Object>();
-	private static final Map<String, MappingMetaData> typeMetadataMapping = new HashMap<>();
-
-	// FIXME: finish mocking out iterator and expand
-	private static final BytesRef ref = new BytesRef("asdf");
-
-	// FIXME: Somehow get real values to return here for expand / search
-	private static final SearchHit[] hitsArray = new SearchHit[3];
+	// Mock out all of the ElasticSearch internals
+	private static final Client client = mock(Client.class);
 
 	@SuppressWarnings("unchecked")
 	private static final ActionFuture<ClusterStateResponse> clusterStateFuture = (ActionFuture<ClusterStateResponse>) mock(
@@ -110,6 +93,21 @@ public class RocchioTest {
 
 	// FIXME: Somehow get real values to return here for expand / search
 	private static final SearchHits hits = mock(SearchHits.class);
+	private static final SearchHit hit1 = mock(SearchHit.class);
+	private static final SearchHit hit2 = mock(SearchHit.class);
+	private static final SearchHit hit3 = mock(SearchHit.class);
+	private static final SearchHit[] hitsArray = { hit1, hit2, hit3 };
+
+	// The index mapping metadata and sub-mappings
+	private static final MappingMetaData mockTypeMetadata = mock(MappingMetaData.class);
+	private static final ImmutableOpenMap<String, MappingMetaData> indexMappingMetadata;
+	private static final LinkedHashMap<String, Object> fieldPropertiesMap = new LinkedHashMap<String, Object>();
+	private static final LinkedHashMap<String, Object> typePropertiesMap = new LinkedHashMap<String, Object>();
+	private static final LinkedHashMap<String, Object> typeMap = new LinkedHashMap<String, Object>();
+	private static final Map<String, MappingMetaData> typeMetadataMapping = new HashMap<>();
+
+	// FIXME: finish mocking out iterator and expand
+	private static final BytesRef ref = new BytesRef("asdf");
 
 	static {
 		// Build up our properties mapping: { "store": true } object
@@ -128,11 +126,6 @@ public class RocchioTest {
 		// Build up our index mapping from the type mapping
 		indexMappingMetadata = new ImmutableOpenMap.Builder<String, MappingMetaData>().putAll(typeMetadataMapping)
 				.build();
-
-		// Build up our expected results from search
-		hitsArray[0] = mock(SearchHit.class);
-		hitsArray[1] = mock(SearchHit.class);
-		hitsArray[2] = mock(SearchHit.class);
 
 		try {
 			// Mock out all expected ElasticSearch responses
