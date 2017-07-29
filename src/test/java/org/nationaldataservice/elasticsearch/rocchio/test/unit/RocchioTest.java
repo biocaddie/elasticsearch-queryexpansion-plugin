@@ -132,8 +132,7 @@ public class RocchioTest {
 		typeMetadataMapping.put(TEST_TYPE, mockTypeMetadata);
 
 		// Build up our index mapping from the type mapping
-		indexMappingMetadata = new ImmutableOpenMap.Builder<String, MappingMetaData>().putAll(typeMetadataMapping)
-				.build();
+		indexMappingMetadata = new ImmutableOpenMap.Builder<String, MappingMetaData>().putAll(typeMetadataMapping).build();
 
 		try {
 			// Mock out ElasticSearch index mapping verification
@@ -157,7 +156,8 @@ public class RocchioTest {
 			when(hits.getHits()).thenReturn(hitsArray);
 			when(hits.hits()).thenReturn(hitsArray);
 			
-			// These are used internally, but are overridden by later mocks (see TermsEnum iteration)
+			// These are used internally, but are likely
+			// overridden by later mocks (see TermsEnum iteration)
 			when(hits.totalHits()).thenReturn(Long.valueOf(3));
 			when(hits.getTotalHits()).thenReturn(Long.valueOf(3));
 
@@ -169,6 +169,8 @@ public class RocchioTest {
 			when(mockMtvItemResponse.getResponse()).thenReturn(mockTvResponse);
 			when(mockMtvResponse.getResponses()).thenReturn(mockMtvItemResponses);
 
+			// FIXME: The two sections below return completely arbitrary values
+			// and should be updated to something more sane
 			// Mock out Lucene Fields/Terms
 			when(mockTvResponse.getFields()).thenReturn(mockFields);
 			when(mockFields.terms(TEST_FIELD)).thenReturn(mockTerms);

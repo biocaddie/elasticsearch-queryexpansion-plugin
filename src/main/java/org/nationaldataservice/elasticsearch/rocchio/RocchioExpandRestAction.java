@@ -79,8 +79,8 @@ public class RocchioExpandRestAction extends BaseRestHandler {
 		int fbDocs = Integer.parseInt(request.param("fbDocs", "10"));
 		int fbTerms = Integer.parseInt(request.param("fbTerms", "10"));
 
-		// Optional stoplist (defaults to null)
-		// FIXME: Stoplist is currently ignored?
+		// Optional stoplist - assumes a space-delimited string of stop words
+		// TODO: Populate list of default stop words
 		String stoplist = request.param("stoplist", "-");
 
 		// Log the request with our full parameter set
