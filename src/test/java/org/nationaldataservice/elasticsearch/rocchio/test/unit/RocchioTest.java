@@ -40,6 +40,17 @@ import org.nationaldataservice.elasticsearch.rocchio.Rocchio;
 
 import edu.gslis.textrepresentation.FeatureVector;
 
+/**
+ * This is a simple unit test suite for the Rocchio ElasticSearch Plugin. Use
+ * these test cases to verify correctness of the query expansion process. You
+ * can also vary the parameters here to see how that affects the resulting
+ * expansion. All ElasticSearch internals have been mocked with Mockito to
+ * return fake data.
+ * 
+ * 
+ * @author lambert8
+ *
+ */
 @RunWith(MockitoJUnitRunner.class)
 public class RocchioTest {
 	/** The Rocchio instance to test */
@@ -62,8 +73,7 @@ public class RocchioTest {
 	private static final Client client = mock(Client.class);
 
 	@SuppressWarnings("unchecked")
-	private static final ActionFuture<ClusterStateResponse> clusterStateFuture = (ActionFuture<ClusterStateResponse>) mock(
-			ActionFuture.class);
+	private static final ActionFuture<ClusterStateResponse> clusterStateFuture = (ActionFuture<ClusterStateResponse>) mock(ActionFuture.class);
 	private static final AdminClient adminClient = mock(AdminClient.class);
 	private static final ClusterAdminClient clusterAdminClient = mock(ClusterAdminClient.class);
 	private static final ClusterState clusterState = mock(ClusterState.class);
@@ -72,8 +82,7 @@ public class RocchioTest {
 	private static final IndexMetaData mockIndexMetaData = mock(IndexMetaData.class);
 
 	@SuppressWarnings("unchecked")
-	private static final ListenableActionFuture<MultiTermVectorsResponse> mockMtvFuture = mock(
-			ListenableActionFuture.class);
+	private static final ListenableActionFuture<MultiTermVectorsResponse> mockMtvFuture = mock(ListenableActionFuture.class);
 	private static final MultiTermVectorsResponse mockMtvResponse = mock(MultiTermVectorsResponse.class);
 	private static final TermVectorsResponse mockTvResponse = mock(TermVectorsResponse.class);
 	private static final MultiTermVectorsItemResponse mockMtvItemResponse = mock(MultiTermVectorsItemResponse.class);
@@ -82,20 +91,19 @@ public class RocchioTest {
 	private static final Terms mockTerms = mock(Terms.class);
 	private static final MultiTermVectorsItemResponse[] mockMtvItemResponses = { mockMtvItemResponse };
 
-	// FIXME: finish mocking out iterator and expand
-	private static final TermsEnum mockIterator = mock(TermsEnum.class);
-
 	@SuppressWarnings("unchecked")
 	private static final ListenableActionFuture<SearchResponse> mockSearchFuture = mock(ListenableActionFuture.class);
 	private static final SearchRequestBuilder srBuilder = mock(SearchRequestBuilder.class);
 	private static final SearchResponse mockSearchResponse = mock(SearchResponse.class);
 
-	// FIXME: Somehow get real values to return here for expand / search
+	// These are used internally, but are overridden by later mocks (see TermsEnum iteration)
 	private static final SearchHits hits = mock(SearchHits.class);
 	private static final SearchHit hit1 = mock(SearchHit.class);
 	private static final SearchHit hit2 = mock(SearchHit.class);
 	private static final SearchHit hit3 = mock(SearchHit.class);
 	private static final SearchHit[] hitsArray = { hit1, hit2, hit3 };
+	
+	private static final TermsEnum mockIterator = mock(TermsEnum.class);
 
 	// The index mapping metadata and sub-mappings
 	private static final MappingMetaData mockTypeMetadata = mock(MappingMetaData.class);
@@ -128,7 +136,7 @@ public class RocchioTest {
 				.build();
 
 		try {
-			// Mock out all expected ElasticSearch responses
+			// Mock out ElasticSearch index mapping verification
 			when(client.admin()).thenReturn(adminClient);
 			when(adminClient.cluster()).thenReturn(clusterAdminClient);
 			when(clusterAdminClient.state(any())).thenReturn(clusterStateFuture);
@@ -139,7 +147,21 @@ public class RocchioTest {
 			when(mockIndexMetaData.getMappings()).thenReturn(indexMappingMetadata);
 			when(mockTypeMetadata.getSourceAsMap()).thenReturn(typeMap);
 
-			// Mock out all expected ElasticSearch responses
+			// Mock out ElasticSearch Search
+			when(client.prepareSearch(anyString())).thenReturn(srBuilder);
+			when(srBuilder.setQuery(any(QueryStringQueryBuilder.class))).thenReturn(srBuilder);
+			when(srBuilder.setSize(anyInt())).thenReturn(srBuilder);
+			when(srBuilder.execute()).thenReturn(mockSearchFuture);
+			when(mockSearchFuture.actionGet()).thenReturn(mockSearchResponse);
+			when(mockSearchResponse.getHits()).thenReturn(hits);
+			when(hits.getHits()).thenReturn(hitsArray);
+			when(hits.hits()).thenReturn(hitsArray);
+			
+			// These are used internally, but are overridden by later mocks (see TermsEnum iteration)
+			when(hits.totalHits()).thenReturn(Long.valueOf(3));
+			when(hits.getTotalHits()).thenReturn(Long.valueOf(3));
+
+			// Mock out ElasticSearch MultiTermVector Fields/Terms
 			when(mockMtvBuilder.execute()).thenReturn(mockMtvFuture);
 			when(mockMtvFuture.actionGet()).thenReturn(mockMtvResponse);
 			when(mockMtvBuilder.add(any())).thenReturn(mockMtvBuilder);
@@ -147,36 +169,18 @@ public class RocchioTest {
 			when(mockMtvItemResponse.getResponse()).thenReturn(mockTvResponse);
 			when(mockMtvResponse.getResponses()).thenReturn(mockMtvItemResponses);
 
-			// FIXME: Mock out Lucene responses
+			// Mock out Lucene Fields/Terms
 			when(mockTvResponse.getFields()).thenReturn(mockFields);
 			when(mockFields.terms(TEST_FIELD)).thenReturn(mockTerms);
 			when(mockTerms.getDocCount()).thenReturn(10);
 			when(mockTerms.getSumTotalTermFreq()).thenReturn(10L);
 			when(mockTerms.iterator()).thenReturn(mockIterator);
 
-			// FIXME: finish mocking out iterator and expand
+			// Mock out Lucene TermsEnum iteration
 			when(mockIterator.next()).thenReturn(termRef).thenReturn(null);
 			when(mockIterator.totalTermFreq()).thenReturn(10L);
 			when(mockIterator.docFreq()).thenReturn(10);
 			when(mockIterator.term()).thenReturn(termRef);
-
-			// Mock building our SearchRequest
-			when(client.prepareSearch(anyString())).thenReturn(srBuilder);
-			when(srBuilder.setQuery(any(QueryStringQueryBuilder.class))).thenReturn(srBuilder);
-			when(srBuilder.setSize(anyInt())).thenReturn(srBuilder);
-			when(srBuilder.execute()).thenReturn(mockSearchFuture);
-
-			// Mock performing our SearchRequest
-			when(mockSearchFuture.actionGet()).thenReturn(mockSearchResponse);
-			when(mockSearchResponse.getHits()).thenReturn(hits);
-
-			// Mock parsing the search results
-			when(hits.getHits()).thenReturn(hitsArray);
-			when(hits.hits()).thenReturn(hitsArray);
-
-			// FIXME: is this ok?
-			when(hits.totalHits()).thenReturn(Long.valueOf(3));
-			when(hits.getTotalHits()).thenReturn(Long.valueOf(3));
 		} catch (IOException e) {
 			e.printStackTrace();
 			fail();
@@ -186,9 +190,7 @@ public class RocchioTest {
 	@Before
 	/** Set up our test Rocchio implementation */
 	public void setUp() throws IOException {
-		// Initialize our Rocchio implementation (not mocked)
-		this.rocchio = new Rocchio(client, TEST_INDEX, TEST_TYPE, TEST_FIELD, TEST_ALPHA, TEST_BETA, TEST_K1,
-				TEST_B);
+		this.rocchio = new Rocchio(client, TEST_INDEX, TEST_TYPE, TEST_FIELD, TEST_ALPHA, TEST_BETA, TEST_K1, TEST_B);
 	}
 
 	@After
@@ -200,7 +202,6 @@ public class RocchioTest {
 	@Test
 	/** Test that validate properly returns null if all parameters are valid */
 	public void testValidate() throws IOException {
-		// Validate example input parameters (should be valid)
 		String shouldBeNull = rocchio.validate(TEST_QUERY, TEST_FB_DOCS, TEST_FB_TERMS);
 		assertNull(shouldBeNull);
 	}
@@ -208,7 +209,6 @@ public class RocchioTest {
 	@Test
 	/** Test that validate fails when query is null */
 	public void testValidateInvalidQuery() throws IOException {
-		// Validate example input parameters (should be valid)
 		String errorMessage = rocchio.validate("", TEST_FB_DOCS, TEST_FB_TERMS);
 		assertNotNull(errorMessage);
 		assertEquals(Rocchio.NULL_QUERY_ERROR, errorMessage);
@@ -217,7 +217,6 @@ public class RocchioTest {
 	@Test
 	/** Test that validate fails when fbDocs < 1 */
 	public void testValidateInvalidFeedbackDocuments() throws IOException {
-		// Validate example input parameters (should be valid)
 		String errorMessage = rocchio.validate(TEST_QUERY, 0, TEST_FB_TERMS);
 		assertNotNull(errorMessage);
 		assertEquals(Rocchio.INVALID_FB_DOCS_ERROR, errorMessage);
@@ -226,7 +225,6 @@ public class RocchioTest {
 	@Test
 	/** Test that validate fails when fbTerms < 1 */
 	public void testValidateInvalidFeedbackTerms() throws IOException {
-		// Validate example input parameters (should be valid)
 		String errorMessage = rocchio.validate(TEST_QUERY, TEST_FB_DOCS, 0);
 		assertNotNull(errorMessage);
 		assertEquals(Rocchio.INVALID_FB_TERMS_ERROR, errorMessage);
@@ -238,17 +236,8 @@ public class RocchioTest {
 		// Expand the query
 		FeatureVector feedbackQuery = rocchio.expandQuery(TEST_QUERY, TEST_FB_DOCS, TEST_FB_TERMS);
 
-		// Format our expanded query with Lucene's boosting syntax
-		/*
-		 * StringBuffer expandedQuery = new StringBuffer(); String separator =
-		 * ""; // start out with no separator for (String term :
-		 * feedbackQuery.getFeatures()) { expandedQuery.append(separator + term
-		 * + "^" + feedbackQuery.getFeatureWeight(term)); separator = " "; //
-		 * add separator after first iteration }
-		 */
-
+		// Verify expanded segments
 		String[] segments = feedbackQuery.toString().trim().split(" ");
-		
 		assertEquals(2, segments.length);
 		assertEquals("0.012976521", segments[0]);
 		assertEquals("rat", segments[1]);

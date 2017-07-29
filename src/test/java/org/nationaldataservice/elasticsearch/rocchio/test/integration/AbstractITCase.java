@@ -27,6 +27,18 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 import static org.junit.Assume.*;
 
+/**
+ * This is a simple base integration test suite class for the 
+ * ElasticSearch Rocchio Plugin. Use these test cases to verify correctness of the API endpoint, 
+ * input validation, compare performance, scale testing, etc
+ * 
+ * @see <a href='https://www.elastic.co/guide/en/elasticsearch/reference/5.3/integration-tests.html'>
+ * 			ElasticSearch Integration Tests
+ * 		</a>
+ * 
+ * @author lambert8
+ *
+ */
 public abstract class AbstractITCase {
 	protected static final Logger staticLogger = ESLoggerFactory.getLogger(AbstractITCase.class);
 	protected final static int HTTP_TEST_PORT = 9400;
@@ -35,6 +47,7 @@ public abstract class AbstractITCase {
 	protected static final Header contentTypeHeader = new BasicHeader("Content-Type", "application/json");
 
 	// TODO: Split these out into separate files
+	// TODO: Add more documents here to scale things out, or read in the full set from disk
 	protected static final String INDEX_JSON = "{\"mappings\":{\"dataset\":{\"_all\":{\"type\":\"text\",\"term_vector\":\"with_positions_offsets_payloads\",\"store\":true,\"analyzer\":\"fulltext_analyzer\"}}},\"settings\":{\"index\":{\"number_of_shards\":1,\"number_of_replicas\":0},\"analysis\":{\"analyzer\":{\"fulltext_analyzer\":{\"type\":\"custom\",\"tokenizer\":\"whitespace\",\"filter\":[\"lowercase\",\"type_as_payload\"]}}}}}";
 	protected static final String[] DOCUMENTS_JSON = {
 		"{\"DOCNO\":\"1\",\"METADATA\":{\"dataResource\":{\"keywords\":[],\"altNames\":[],\"acronyms\":[]},\"citation\":{\"count\":\"0\"},\"organism\":{\"experiment\":{\"species\":\"Sinorhizobium meliloti\"}},\"dataItem\":{\"description\":\"We characterized transcriptomes of a strain overexpressing syrA.  Our work shows that the syrA transcriptome shares similar gene expression changes to the syrM and nodD3 transcriptomes and that nodD3 and syrA may be the only targets directly activated by SyrM.  We propose that most of the gene expression changes observed when nodD3 is overexpressed are due to NodD3 activation of syrM expression, which in turn stimulates SyrM activation of syrA expression.  The subsequent increase in SyrA abundance alters activity of the ChvI-ExoS-ExoR circuit, resulting in broad changes in gene expression. Gene expression profiling of Sinorhizobium meliloti overexpressing syrA was performed using custom Affymetrix GeneChips\",\"title\":\"The Sinorhizobium meliloti SyrM regulon: effects on global gene expression are mediated by syrA and nodD3 (SyrA)\",\"releaseDate\":\"2015-03-31\",\"lastUpdateDate\":\"2015-04-04\",\"dataTypes\":[\"organism\",\"dataItem\",\"citation\"],\"ID\":\"520401\",\"experimentType\":\"transcription profiling by array\"}},\"REPOSITORY\":\"arrayexpress_020916\",\"TITLE\":\"The Sinorhizobium meliloti SyrM regulon: effects on global gene expression are mediated by syrA and nodD3 (SyrA)\"}",

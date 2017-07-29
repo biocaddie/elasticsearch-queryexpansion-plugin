@@ -16,6 +16,36 @@
     <connection>scm:git:git:git@github.com:nds-org/elasticsearch-queryexpansion-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:nds-org/elasticsearch-queryexpansion-plugin.git</developerConnection>
   </scm>
+  
+  <licenses>
+    <license>
+      <name>MIT</name>
+      <url>https://opensource.org/licenses/MIT</url>
+    </license>
+  </licenses>
+  
+  <developers>
+    <developer>
+      <name>Craig Willis</name>
+      <email>willis8@illinois.edu</email>
+      <organization>National Data Service</organization>
+      <organizationUrl>http://www.nationaldataservice.org/</organizationUrl>
+    </developer>
+  
+    <developer>
+      <name>Garrick Sherman</name>
+      <email>gsherma2@illinois.edu</email>
+      <organization>University of Illinois</organization>
+      <organizationUrl>http://ischool.illinois.edu/</organizationUrl>
+    </developer>
+    
+    <developer>
+      <name>Mike Lambert</name>
+      <email>lambert8@illinois.edu</email>
+      <organization>National Data Service</organization>
+      <organizationUrl>http://www.nationaldataservice.org/</organizationUrl>
+    </developer>
+  </developers>
 
   <parent>
     <groupId>org.sonatype.oss</groupId>
@@ -62,6 +92,23 @@
     <skipIntegTests>false</skipIntegTests>
     <skipUnitTests>false</skipUnitTests>
   </properties>
+  
+  <profiles>
+    <profile>
+        <id>es-1x</id>
+        <properties>
+            <elasticsearch.groupid>org.elasticsearch</elasticsearch.groupid>
+            <elasticsearch.version>1.7.5</elasticsearch.version>
+        </properties>
+    </profile>
+    <profile>
+        <id>es-2x</id>
+        <properties>
+            <elasticsearch.groupid>org.elasticsearch.distribution.zip</elasticsearch.groupid>
+            <elasticsearch.version>2.3.3</elasticsearch.version>
+        </properties>
+    </profile>
+</profiles>
 
   <dependencies>
     <dependency>
@@ -309,7 +356,7 @@
               <skip>${skipIntegTests}</skip>
               <artifactItems>
                 <artifactItem>
-                  <groupId>org.elasticsearch.distribution.integ-test-zip</groupId>
+                  <groupId>${elasticsearch.groupid}</groupId>
                   <artifactId>elasticsearch</artifactId>
                   <version>${elasticsearch.version}</version>
                   <type>zip</type>
