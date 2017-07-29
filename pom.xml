@@ -93,23 +93,6 @@
     <skipUnitTests>false</skipUnitTests>
   </properties>
   
-  <profiles>
-    <profile>
-        <id>es-1x</id>
-        <properties>
-            <elasticsearch.groupid>org.elasticsearch</elasticsearch.groupid>
-            <elasticsearch.version>1.7.5</elasticsearch.version>
-        </properties>
-    </profile>
-    <profile>
-        <id>es-2x</id>
-        <properties>
-            <elasticsearch.groupid>org.elasticsearch.distribution.zip</elasticsearch.groupid>
-            <elasticsearch.version>2.3.3</elasticsearch.version>
-        </properties>
-    </profile>
-</profiles>
-
   <dependencies>
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
