@@ -80,7 +80,8 @@ public class RocchioExpandRestAction extends BaseRestHandler {
 		int fbTerms = Integer.parseInt(request.param("fbTerms", "10"));
 
 		// Optional stoplist (defaults to null)
-		String stoplist = request.param("stoplist", null);
+		// FIXME: Stoplist is currently ignored?
+		String stoplist = request.param("stoplist", "-");
 
 		// Log the request with our full parameter set
 		this.logger.info(String.format(
@@ -110,17 +111,21 @@ public class RocchioExpandRestAction extends BaseRestHandler {
 			this.logger.debug("Expanding query: " + feedbackQuery.toString());
 			StringBuffer expandedQuery = new StringBuffer();
 			String separator = ""; // start out with no separator
+
 			for (String term : feedbackQuery.getFeatures()) {
 				expandedQuery.append(separator + term + "^" + feedbackQuery.getFeatureWeight(term));
 				separator = " "; // add separator after first iteration
 			}
+			
+			String fullQuery = expandedQuery.toString().trim();
 
 			// Return the expanded query (don't actually perform the search)
 			this.logger.debug("Responding: " + expandedQuery.toString());
 			return channel -> {
 				XContentBuilder builder = JsonXContent.contentBuilder();
 				builder.startObject();
-				builder.field("query", expandedQuery.toString());
+
+				builder.field("query", fullQuery);
 				builder.endObject();
 				channel.sendResponse(new BytesRestResponse(RestStatus.OK, builder));
 			};
