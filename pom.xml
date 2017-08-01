@@ -107,7 +107,7 @@
       <artifactId>junit</artifactId>
       <version>${junit.version}</version>
       <exclusions>
-        <exclusion>  <!-- declare the exclusion here -->
+        <exclusion>
           <groupId>org.hamcrest</groupId>
           <artifactId>hamcrest-core</artifactId>
         </exclusion>
@@ -210,15 +210,15 @@
       <artifactId>ir-utils</artifactId>
       <version>${ir-utils.version}</version>
       <exclusions>
-        <exclusion>  <!-- declare the exclusion here -->
+        <exclusion>
           <groupId>commons-collections</groupId>
           <artifactId>commons-collections</artifactId>
         </exclusion>
-        <exclusion>  <!-- declare the exclusion here -->
+        <exclusion>
           <groupId>org.apache.geronimo.specs</groupId>
           <artifactId>geronimo-stax-api_1.0_spec</artifactId>
         </exclusion>
-        <exclusion>  <!-- declare the exclusion here -->
+        <exclusion>
           <groupId>xml-apis</groupId>
           <artifactId>xml-apis</artifactId>
         </exclusion>
