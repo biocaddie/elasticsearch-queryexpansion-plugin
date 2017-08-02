@@ -8,11 +8,20 @@ A simple ElasticSearch plugin wrapping around the search endpoint to provide Roc
 
 * Git + Maven
 
-# Usage
-For now, cloning the source is required to run the plugin (see TODOs):
+# Installing from OSSRH
+You can install the plugin using the following command:
+```bash
+bin/elasticsearch-plugin install https://oss.sonatype.org/content/repositories/snapshots/edu/illinois/lis/queryexpansion/5.3.2-SNAPSHOT/queryexpansion-5.3.2-20170726.231658-1.zip
+```
+
+NOTE: You can check https://oss.sonatype.org/content/repositories/snapshots/edu/illinois/lis/queryexpansion/5.3.2-SNAPSHOT for a link to the newest `.zip` file.
+
+# Building From Source
+Clone this repository:
 ```bash
 git clone bodom0015/elasticsearch-queryexpansion-plugin queryexpansion && cd queryexpansion 
 ```
+
 To use:
 
 0. [Setup](README.md#setup)
@@ -70,9 +79,6 @@ You should now be able to test the new endpoint using the helper script or via r
 ```bash
 $ ./test.sh
 {"query":"sclerosis^2.798773920190095 study^0.4716440174771813 disease^0.584064093901503 or^0.3394485958568884 patients^0.79730633189081 multiple^1.941784058395449 was^0.4222225922753828 is^0.38702376034952857 to^0.4432445617796595 on^0.3817563584164061"}
-
-$ ./test.sh search
-<placeholder - this output format is currently incorrect> 
 ```
 
 
@@ -117,6 +123,8 @@ A few other helper scripts are included to ease testing:
 ./test.sh [search]          # Performs a test query against our REST API endpoint (only expands by default, but searches if first parameter is "search")
 ```
 
-# TODO
-* Write some unit / integration tests
-* Publish release artifacts so users don't need to build the source by hand
+# Deploying artifacts
+New artifacts can be deployed to OSSRH using the following command:
+```bash
+GPG_TTY=$(tty) mvn clean deploy
+```
