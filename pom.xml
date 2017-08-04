@@ -79,7 +79,7 @@
     <snakeyaml.version>1.15</snakeyaml.version>
     <xmlbeans.version>2.3.0</xmlbeans.version>
     <beanutils.version>1.8.3</beanutils.version>
-    <lucene.version>6.5.1</lucene.version>
+    <lucene.version>6.4.2</lucene.version>
     <commons-cli.version>1.4</commons-cli.version>
 
     <!-- For integration tests using ANT -->
