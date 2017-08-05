@@ -7,7 +7,8 @@ TEST_USERNAME="elastic"
 TEST_PASSWORD="changeme"
 
 # Specify expansion / search parameters
-TEST_INDEX="dataset"
+TEST_INDEX="biocaddie"
+SEARCH_TYPE="dataset"
 TEST_QUERY="multiple+sclerosis"
 STOP_LIST="a+an+the+and+or+of+from+on+was+to+is+-+were+at+as+we"
 

@@ -84,7 +84,7 @@ public class RocchioIT extends AbstractITCase {
 			List<Map<String, Object>> plugins = (List<Map<String, Object>>) node.get("plugins");
 			for (Map<String, Object> plugin : plugins) {
 				String pluginName = (String) plugin.get("name");
-				if (pluginName.equals("queryexpansion")) {
+				if (pluginName.equals("rocchio")) {
 					pluginFound = true;
 					break;
 				}
