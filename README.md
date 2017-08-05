@@ -1,14 +1,44 @@
-# elasticsearch-queryexpansion-plugin
-A simple ElasticSearch plugin wrapping around the search endpoint to provide Rocchio query expansion
+# Rocchio expansion for ElasticSearch
 
-# Prerequisites
-* Docker
-   
-**OR**
+<img src="https://github.com/craig-willis/ndslabs/blob/master/docs/images/logos/NDS-badge.png" width="100" alt="NDS"> <img src="https://biocaddie.org/sites/default/files/biocaddie-logo.png" alt="bioCADDIE">
 
-* Git + Maven
+This is a prototype plugin for ElasticSearch 5.x to add Rocchio-based query expansion support with BM25 similarity. This plugin adds an ``_expand`` REST endpoint to ElasticSearch that returns a "query string query" with Lucene-style terms weights. This plugin was developed as part of the  NDS [bioCADDIE pilot](https://biocaddie.org/expansion-models-biomedical-data-search).
 
-# Installing from OSSRH
+## Why Rocchio?
+Our original goal was to implement relevance model (RM) based expansion using Lucene's language modeling similarity implementations. Our investigations revealed that Lucene's language modeling implementation is incomplete and may not be suitable for use with RM. Given Lucene's origins as a vector-space implementation and current default BM25 scorer, we opted to instead implement Rocchio-style expansion.
+
+## REST Interface
+
+Endpoint:  
+``/index/_expand``
+
+Parameters:
+* ``type``: Document type, defaults to ``dataset``
+* ``field``: Field to search, defaults to ``_all``
+* ``alpha``: Original query weight, defaults to 0.5
+* ``beta``: Feedback query weight, defaults to 0.5
+* ``k1``: BM25 k1 parameter, defaults to 1.2
+* ``b``: BM25 b parameter, defaults to 0.75
+* ``fbDocs``: Number of feedback documents, defaults to 10
+* ``fbTerms``: Number of feedback terms, defaults to 10
+* ``stoplist``: Additional stoplist terms (modifies primary stoplist)
+* ``query``:  Query to expand
+
+The expand endpoint returns a JSON object with the expanded query in "query string query" format with each expansion term and the associated expansion weight:
+```
+{
+    "query":  "term1^weight1 term2^weight2 ..."
+}
+```
+
+
+## Prerequisites
+
+* ElasticSearch 5.3.2 (native or via Docker)
+* Git + Maven (native or via Docker)
+* ElasticSearch index
+
+## Installing from OSSRH
 You can install the plugin using the following command:
 ```bash
 bin/elasticsearch-plugin install https://oss.sonatype.org/content/repositories/snapshots/edu/illinois/lis/queryexpansion/5.3.2-SNAPSHOT/queryexpansion-5.3.2-20170726.231658-1.zip
@@ -16,32 +46,39 @@ bin/elasticsearch-plugin install https://oss.sonatype.org/content/repositories/s
 
 NOTE: You can check https://oss.sonatype.org/content/repositories/snapshots/edu/illinois/lis/queryexpansion/5.3.2-SNAPSHOT for a link to the newest `.zip` file.
 
-# Building From Source
+## Building From Source
 Clone this repository:
 ```bash
-git clone bodom0015/elasticsearch-queryexpansion-plugin queryexpansion && cd queryexpansion 
+git clone nds-org/elasticsearch-queryexpansion-plugin queryexpansion && cd queryexpansion 
+mvn package
+bin/elasticsearch-plugin install file:///path/to/elasticsearch-queryexpansion-plugin/target/releases/queryexpansion-5.3.2-SNAPSHOT.zip
 ```
 
-To use:
 
-0. [Setup](README.md#setup)
-1. [Build](README.md#build)
-2. [Load](README.md#load)
-3. [Test](README.md#test)
+##  Example usage
 
-## Setup
+The repository includes several scripts demonstrating how to install and use the plugin via Docker:
+
+1. [Setup](README.md#setup)
+2. [Build](README.md#build)
+3. [Load](README.md#load)
+4. [Test](README.md#test)
+
+### Setup
+The following steps demonstrate how to build an ElasticSearch index from the bioCADDIE test collection.
+
 Make sure that the biocaddie benchmark test dataset exists somewhere on disk:
 ```bash
 cd $HOME
 wget https://biocaddie.org/sites/default/files/update_json_folder.zip && unzip update_json_folder.zip
 ```
 
-Run an ElasticSearch 5.3.2 container using the helper script:
+Start ElasticSearch or run ElasticSearch 5.3.2 via Docker using the helper script:
 ```bash
 ./scripts/start.sh
 ```
 
-Then, set up an index with the required parameters (store==true):
+Create an index with the required parameters (store==true):
 ```bash
 ./scripts/create-index.sh
 ```
@@ -55,32 +92,28 @@ Finally, use the helper script to add the documents to the index:
 
 NOTE: Indexing the full benchmark set can take a long time. If you only need a small subset of the documents, you can always `Ctrl+C` once you get the desired number of records indexed.
 
-## Build
-A helper script has been included to ease building:
+### Build
+The following helper script will build the plugin using Maven (or using Docker if Maven is not installed):
 ```bash
 ./scripts/build.sh
 ```
-
-This will attempt to build the source using Maven (or Docker, if Maven is not available).
-
 Either way, the build should produce a `target/releases/` directory with the necessary `.zip` file.
 
-The `.zip` that ElasticSearch needs should be found at `./target/releases/queryexpansion-5.3.2-SNAPSHOT.zip`.
+The `.zip` that ElasticSearch needs should be found at `./target/releases/rocchio-0.0.1-SNAPSHOT.jar`.
 
-## Load
-Once the artifacts are built, we just need to install them and restart ElasticSearch:
+### Load
+Once the artifacts are built, we just need to install them and restart ElasticSearch. The following helper scripts assume that you are running ElasticSearch via Docker:
 ```bash
 ./scripts/install.sh
 ./scripts/restart.sh
 ```
 
-## Test
+### Test
 You should now be able to test the new endpoint using the helper script or via raw `curl`:
 ```bash
 $ ./test.sh
 {"query":"sclerosis^2.798773920190095 study^0.4716440174771813 disease^0.584064093901503 or^0.3394485958568884 patients^0.79730633189081 multiple^1.941784058395449 was^0.4222225922753828 is^0.38702376034952857 to^0.4432445617796595 on^0.3817563584164061"}
 ```
-
 
 You can check the container logs to see what happened under the covers:
 ```bash
