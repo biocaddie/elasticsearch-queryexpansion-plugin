@@ -5,7 +5,7 @@
 This is a prototype plugin for ElasticSearch 5.x to add Rocchio-based query expansion support using BM25 similarity. This plugin adds an ``_expand`` REST endpoint to ElasticSearch that returns a "[query string query](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html)" with Lucene-style terms weights. This plugin was developed as part of the  NDS [bioCADDIE pilot](https://biocaddie.org/expansion-models-biomedical-data-search).
 
 ## Why Rocchio?
-Our original goal was to implement relevance model (RM) based expansion using Lucene's language modeling similarity implementations. Our investigations revealed that [Lucene's language modeling implementation is incomplete](https://issues.apache.org/jira/browse/LUCENE-5847) and may not be suitable for use with RM. Given Lucene's origins as a vector-space implementation and current default BM25 scorer, we opted to instead implement Rocchio-style expansion.
+Our original goal was to implement relevance model (RM) based expansion using Lucene's language modeling similarity implementations. Our investigations revealed that [Lucene's language modeling implementation is incomplete](https://issues.apache.org/jira/browse/LUCENE-5847) and may not be suitable for use with RM. Given Lucene's origins as a vector-space implementation and current default BM25 scorer, we opted to instead implement Rocchio-style expansion. While Rocchio expansion was not originally intended for use with the BM25 retrieval model, it has proven effective.
 
 ## REST Interface
 
