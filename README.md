@@ -24,12 +24,29 @@ Parameters:
 * ``stoplist``: Additional stoplist terms (modifies primary stoplist)
 * ``query``:  Query to expand
 
-The expand endpoint returns a JSON object with the expanded query in "query string query" format with each expansion term and the associated expansion weight:
+The expand endpoint returns a JSON object with the expanded query in "[query string query](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html)" format with each expansion term and the associated expansion weight:
 ```
 {
     "query":  "term1^weight1 term2^weight2 ..."
 }
 ```
+
+This query can be used with the standard ElasticSeach ``_search`` endpoint:
+```
+curl -XGET 'localhost:9200/biocaddie/_search?pretty' -H 'Content-Type: application/json' -d'
+{
+    "query": {
+        "query_string" : {
+            "default_field" : "_all",
+            "query" : "term1^weight1 term2^weight2"
+        }
+    }
+}
+'
+```
+
+
+
 
 
 ## Prerequisites
